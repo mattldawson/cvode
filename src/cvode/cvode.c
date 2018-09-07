@@ -201,7 +201,7 @@
 #define HLB_FACTOR RCONST(100.0)
 #define HUB_FACTOR RCONST(0.1)
 #define H_BIAS     HALF
-#define MAX_ITERS  4
+#define MAX_ITERS  4000
 
 #define CORTES RCONST(0.1)
 
@@ -2849,13 +2849,27 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
                                  realtype saved_t, int *nefPtr, realtype *dsmPtr)
 {
   realtype dsm;
+  realtype min_conc;
   int retval;
+  
+  /* Find the minimum concentration and if it's small and negative, make it
+   * positive */
+  N_VLinearSum(cv_mem->cv_l[0], cv_mem->cv_acor, ONE, cv_mem->cv_zn[0],
+               cv_mem->cv_ftemp);
+  min_conc = N_VMin(cv_mem->cv_ftemp);
+  if (min_conc < ZERO && min_conc > -1.0e-30) {
+    N_VAbs(cv_mem->cv_ftemp, cv_mem->cv_ftemp);
+    N_VLinearSum(-cv_mem->cv_l[0], cv_mem->cv_acor, ONE, cv_mem->cv_ftemp,
+                 cv_mem->cv_zn[0]);
+    min_conc = ZERO;
+  }
   
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
 
-  /* If est. local error norm dsm passes test, return CV_SUCCESS */  
+  /* If est. local error norm dsm passes test and there are no negative values,
+   * return CV_SUCCESS */  
   *dsmPtr = dsm; 
-  if (dsm <= ONE) return(CV_SUCCESS);
+  if (dsm <= ONE && min_conc >= ZERO) return(CV_SUCCESS);
   
   /* Test failed; increment counters, set nflag, and restore zn array */
   (*nefPtr)++;
