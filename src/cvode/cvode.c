@@ -20,6 +20,7 @@
  * It is independent of the CVODE linear solver in use.
  * -----------------------------------------------------------------
  */
+#define PMC_DEBUG_SPEC_ 50
 
 /*=================================================================*/
 /*             Import Header Files                                 */
@@ -33,6 +34,27 @@
 #include "cvode_impl.h"
 #include <sundials/sundials_math.h>
 #include <sundials/sundials_types.h>
+#include <nvector/nvector_serial.h>
+
+#ifdef PMC_DEBUG
+#define PMC_DEBUG_PRINT(x) pmc_debug_print(cv_mem, x, 0, __LINE__, __func__)
+#define PMC_DEBUG_PRINT_INT(x,y) pmc_debug_print(cv_mem, x, y, __LINE__, __func__)
+void pmc_debug_print(CVodeMem cv_mem, const char *message, const int int_val,
+    const int line, const char *func)
+{
+  printf("\n[DEBUG] line %4d in %-20s(): %-25s %-4.0d t_n = %le h = %le q = %d "
+         "hin = %le species %d(y = %le zn[0] = %le zn[1] = %le ftemp = %le)", 
+         line, func, message, int_val, cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_q,
+         cv_mem->cv_hin, PMC_DEBUG_SPEC_,
+         NV_DATA_S(cv_mem->cv_y)[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[0])[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[1])[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_ftemp)[PMC_DEBUG_SPEC_]);
+}
+#else
+#define PMC_DEBUG_PRINT(x)
+#define PMC_DEBUG_PRINT_INT(x,y)
+#endif
 
 /*=================================================================*/
 /*             CVODE Private Constants                             */
@@ -1018,9 +1040,11 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Call f at (t0,y0), set zn[1] = y'(t0), 
        set initial h (from H0 or cvHin), and scale zn[1] by h.
        Also check for zeros of root function g at and near t0.    */
-    
+    PMC_DEBUG_PRINT("Request derivative"); 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                           cv_mem->cv_zn[1], cv_mem->cv_user_data); 
+    N_VScale(ONE, cv_mem->cv_zn[0], yout);
+    PMC_DEBUG_PRINT("Received derivative"); 
     cv_mem->cv_nfe++;
     if (retval < 0) {
       cvProcessError(cv_mem, CV_RHSFUNC_FAIL, "CVODE", "CVode",
@@ -1046,6 +1070,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Set initial h (from H0 or cvHin). */
 
     cv_mem->cv_h = cv_mem->cv_hin;
+    PMC_DEBUG_PRINT("After setting h to h_in");
     if ( (cv_mem->cv_h != ZERO) && ((tout-cv_mem->cv_tn)*cv_mem->cv_h < ZERO) ) {
       cvProcessError(cv_mem, CV_ILL_INPUT, "CVODE", "CVode", MSGCV_BAD_H0);
       return(CV_ILL_INPUT);
@@ -1079,6 +1104,8 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     cv_mem->cv_hprime = cv_mem->cv_h;
 
     N_VScale(cv_mem->cv_h, cv_mem->cv_zn[1], cv_mem->cv_zn[1]);
+
+    PMC_DEBUG_PRINT("After initial scaling of zn[1] by h0");
 
     /* Check for zeros of root function g at and near t0. */
 
@@ -1227,7 +1254,9 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
   nstloc = 0;
   for(;;) {
-   
+  
+    PMC_DEBUG_PRINT_INT("Beginning timestep", nstloc);
+
     cv_mem->cv_next_h = cv_mem->cv_h;
     cv_mem->cv_next_q = cv_mem->cv_q;
     
@@ -1866,8 +1895,10 @@ static int cvYddNorm(CVodeMem cv_mem, realtype hg, realtype *yddnrm)
   int retval;
 
   N_VLinearSum(hg, cv_mem->cv_zn[1], ONE, cv_mem->cv_zn[0], cv_mem->cv_y);
+  PMC_DEBUG_PRINT("Request derivative"); 
   retval = cv_mem->cv_f(cv_mem->cv_tn+hg, cv_mem->cv_y,
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
+  PMC_DEBUG_PRINT("Received derivative"); 
   cv_mem->cv_nfe++;
   if (retval < 0) return(CV_RHSFUNC_FAIL);
   if (retval > 0) return(RHSFUNC_RECVR);
@@ -1916,9 +1947,12 @@ static int cvStep(CVodeMem cv_mem)
   for(;;) {  
 
     cvPredict(cv_mem);  
+    PMC_DEBUG_PRINT("After prediction");
     cvSet(cv_mem);
+    PMC_DEBUG_PRINT("After setting");
 
     nflag = cvNls(cv_mem, nflag);
+    PMC_DEBUG_PRINT("After NLS");
     kflag = cvHandleNFlag(cv_mem, &nflag, saved_t, &ncf);
 
     /* Go back in loop if we need to predict again (nflag=PREV_CONV_FAIL)*/
@@ -2489,9 +2523,11 @@ static int cvNlsFunctional(CVodeMem cv_mem)
   
   cv_mem->cv_crate = ONE;
   m = 0;
-
+  
+  PMC_DEBUG_PRINT("Request derivative"); 
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
+  PMC_DEBUG_PRINT("Received derivative"); 
   cv_mem->cv_nfe++;
   if (retval < 0) return(CV_RHSFUNC_FAIL);
   if (retval > 0) return(RHSFUNC_RECVR);
@@ -2535,8 +2571,10 @@ static int cvNlsFunctional(CVodeMem cv_mem)
     /* Save norm of correction, evaluate f, and loop again */
     delp = del;
 
+    PMC_DEBUG_PRINT("Request derivative"); 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_tempv, cv_mem->cv_user_data);
+    PMC_DEBUG_PRINT("Received derivative"); 
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
@@ -2596,13 +2634,16 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
   for(;;) {
 
+    PMC_DEBUG_PRINT("Request derivative"); 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+    PMC_DEBUG_PRINT("Received derivative"); 
     cv_mem->cv_nfe++; 
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
 
     if (callSetup) {
+      PMC_DEBUG_PRINT("Doing lsetup");
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_zn[0],
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
@@ -2668,8 +2709,10 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
+    PMC_DEBUG_PRINT("Calling linear solver");
     retval = cv_mem->cv_lsolve(cv_mem, b, cv_mem->cv_ewt,
-                               cv_mem->cv_y, cv_mem->cv_ftemp); 
+                               cv_mem->cv_y, cv_mem->cv_ftemp);
+    PMC_DEBUG_PRINT("After linear solver"); 
     cv_mem->cv_nni++;
     
     if (retval < 0) return(CV_LSOLVE_FAIL);
@@ -2716,8 +2759,11 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     
     /* Save norm of correction, evaluate f, and loop again */
     delp = del;
+    PMC_DEBUG_PRINT("Request derivative"); 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+    N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
+    PMC_DEBUG_PRINT("Received derivative"); 
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) {
@@ -2914,8 +2960,10 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_qwait = LONG_WAIT;
   cv_mem->cv_nscon = 0;
 
+  PMC_DEBUG_PRINT("Request derivative"); 
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
+  PMC_DEBUG_PRINT("Received derivative"); 
   cv_mem->cv_nfe++;
   if (retval < 0)  return(CV_RHSFUNC_FAIL);
   if (retval > 0)  return(CV_UNREC_RHSFUNC_ERR);
