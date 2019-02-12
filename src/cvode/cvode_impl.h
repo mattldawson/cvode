@@ -102,6 +102,7 @@ typedef struct CVodeMemRec {
                           equation, acor = y_n(m) - y_n(0). On return, 
                           this vector is scaled to give the est. local err.   */
   N_Vector cv_tempv;   /* temporary storage vector                            */
+  N_Vector cv_tempv1;  /* temporary storage vector                            */
   N_Vector cv_ftemp;   /* temporary storage vector                            */
 
   /*-----------------
