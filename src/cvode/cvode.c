@@ -978,7 +978,6 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
   int ewtsetOK;
   realtype troundoff, tout_hin, rh, nrm;
   booleantype inactive_roots;
-  realtype scale_factor;
 
   /*
    * -------------------------------------
@@ -1092,27 +1091,6 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     if (rh > ONE) cv_mem->cv_h /= rh;
     if (SUNRabs(cv_mem->cv_h) < cv_mem->cv_hmin)
       cv_mem->cv_h *= cv_mem->cv_hmin/SUNRabs(cv_mem->cv_h);
-
-    /* if the predicted array z_n(0) is less than a small negative number, adjust the
-     * initial h to be the approximate time at which z_n(0) becomes negative */
-    N_VLinearSum(ONE, cv_mem->cv_zn[0], cv_mem->cv_h, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
-    realtype min_val = N_VMin(cv_mem->cv_ftemp);
-    if( min_val < -PMC_TINY ) {
-      PMC_DEBUG_PRINT("Small initial value found");
-      N_VLinearSum(-ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_ftemp, cv_mem->cv_tempv);
-      PMC_DEBUG_PRINT("Got diff array");
-      N_VCompare(PMC_TINY, cv_mem->cv_zn[0], cv_mem->cv_ftemp);
-      N_VAddConst(cv_mem->cv_ftemp, -ONE, cv_mem->cv_ftemp);
-      PMC_DEBUG_PRINT("Found near-zero initial conc.");
-      N_VLinearSum(ONE, cv_mem->cv_zn[0], -PMC_TINY, cv_mem->cv_ftemp, cv_mem->cv_ftemp);
-      PMC_DEBUG_PRINT("Adjust near-zero initial conc.");
-      N_VDiv(cv_mem->cv_tempv, cv_mem->cv_ftemp, cv_mem->cv_tempv);
-      PMC_DEBUG_PRINT("Got relative changes");
-      scale_factor = -N_VMin(cv_mem->cv_tempv);
-      scale_factor = ONE / scale_factor;
-      scale_factor = scale_factor < TINY ? TINY : scale_factor;
-      cv_mem->cv_h *= scale_factor;
-    }
 
     /* Check for approach to tstop */
 
@@ -2284,14 +2262,19 @@ static void cvPredict(CVodeMem cv_mem)
     scale_factor = ONE / scale_factor;
     scale_factor = scale_factor < TINY ? TINY : scale_factor;
     PMC_DEBUG_PRINT("Got scale factor");
-    N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_ftemp, cv_mem->cv_zn[1]);
-    N_VScale(scale_factor, cv_mem->cv_zn[1], cv_mem->cv_zn[1]);
-    PMC_DEBUG_PRINT("Recalculated z_n(1)");
-    N_VLinearSum(ONE, cv_mem->cv_ftemp, ONE, cv_mem->cv_zn[1], cv_mem->cv_zn[0]);
+    for (k = cv_mem->cv_q; k >= 1; k--)
+      for (j = k; j <= cv_mem->cv_q; j++)
+        N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
+                     cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
+    PMC_DEBUG_PRINT_INT("Unrolled changes in zn array, order:", cv_mem->cv_q);
+    for (j = 1; j <= cv_mem->cv_q; j++)
+      N_VScale(scale_factor, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
+    PMC_DEBUG_PRINT("Scaled zn array");
+    for (k = 1; k <= cv_mem->cv_q; k++)
+      for (j = cv_mem->cv_q; j >= k; j--)
+        N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
+                     cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
     PMC_DEBUG_PRINT("Recalculated z_n(0)");
-    for (j = 2; j <= cv_mem->cv_q; j++)
-      N_VConst(ZERO, cv_mem->cv_zn[j]);
-    PMC_DEBUG_PRINT_INT("Reset history array, order:", cv_mem->cv_q);
   }
 }
 
