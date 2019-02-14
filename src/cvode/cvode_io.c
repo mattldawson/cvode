@@ -58,6 +58,28 @@ int CVodeSetErrHandlerFn(void *cvode_mem, CVErrHandlerFn ehfun, void *eh_data)
   return(CV_SUCCESS);
 }
 
+/*
+ * CVodeSetDlsGuessHelper
+ *
+ * Specifies the guess helper function
+ */
+
+int CVodeSetDlsGuessHelper(void *cvode_mem, CVDlsGuessHelperFn ghfun)
+{
+  CVodeMem cv_mem;
+
+  if (cvode_mem==NULL) {
+    cvProcessError(NULL, CV_MEM_NULL, "CVODE", "CVodeSetDlsGuessHelper", MSGCV_NO_MEM);
+    return(CV_MEM_NULL);
+  }
+
+  cv_mem = (CVodeMem) cvode_mem;
+
+  cv_mem->cv_ghfun = ghfun;
+
+  return(CV_SUCCESS);
+}
+\
 /* 
  * CVodeSetErrFile
  *

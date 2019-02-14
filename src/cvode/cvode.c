@@ -388,6 +388,7 @@ void *CVodeCreate(int lmm, int iter)
   cv_mem->cv_e_data     = NULL;
   cv_mem->cv_ehfun      = cvErrHandler;
   cv_mem->cv_eh_data    = cv_mem;
+  cv_mem->cv_ghfun      = NULL;
   cv_mem->cv_errfp      = stderr;
   cv_mem->cv_qmax       = maxord;
   cv_mem->cv_mxstep     = MXSTEP_DEFAULT;
@@ -2230,10 +2231,6 @@ static void cvRescale(CVodeMem cv_mem)
 static void cvPredict(CVodeMem cv_mem)
 {
   int j, k;
-  realtype min_val, scale_factor;
-
-  /* save the original z_n(0) */
-  N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_ftemp);
 
   cv_mem->cv_tn += cv_mem->cv_h;
   if (cv_mem->cv_tstopset) {
@@ -2245,37 +2242,13 @@ static void cvPredict(CVodeMem cv_mem)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
 
-  /* if the predicted array z_n(0) is less than a small negative number, scale
-   * the change in z_n(0) from tn to tn + h such that the smallest element of
-   * the predicted array z_n(0) is zero. */
-  min_val = N_VMin(cv_mem->cv_zn[0]);
-  if( min_val < -PMC_TINY ) {
-    PMC_DEBUG_PRINT("Small value found");
-    N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_ftemp, cv_mem->cv_tempv);
-    PMC_DEBUG_PRINT("Got diff array");
-    N_VCompare(PMC_TINY, cv_mem->cv_ftemp, cv_mem->cv_tempv1);
-    N_VAddConst(cv_mem->cv_tempv1, -ONE, cv_mem->cv_tempv1);
-    N_VLinearSum(ONE, cv_mem->cv_ftemp, -PMC_TINY, cv_mem->cv_tempv1, cv_mem->cv_tempv1);
-    N_VDiv(cv_mem->cv_tempv, cv_mem->cv_tempv1, cv_mem->cv_tempv);
-    PMC_DEBUG_PRINT("Got relative changes");
-    scale_factor = -N_VMin(cv_mem->cv_tempv);
-    scale_factor = ONE / scale_factor;
-    scale_factor = scale_factor < TINY ? TINY : scale_factor;
-    PMC_DEBUG_PRINT("Got scale factor");
-    for (k = cv_mem->cv_q; k >= 1; k--)
-      for (j = k; j <= cv_mem->cv_q; j++)
-        N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
-                     cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
-    PMC_DEBUG_PRINT_INT("Unrolled changes in zn array, order:", cv_mem->cv_q);
-    for (j = 1; j <= cv_mem->cv_q; j++)
-      N_VScale(scale_factor, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
-    PMC_DEBUG_PRINT("Scaled zn array");
-    for (k = 1; k <= cv_mem->cv_q; k++)
-      for (j = cv_mem->cv_q; j >= k; j--)
-        N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
-                     cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
-    PMC_DEBUG_PRINT("Recalculated z_n(0)");
+  /* Call a user-supplied function to improve guesses for zn(0), if one exists */
+  if (cv_mem->cv_ghfun) {
+    cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
+                     cv_mem->cv_zn[1], cv_mem->cv_user_data, cv_mem->cv_tempv,
+                     cv_mem->cv_tempv1);
   }
+
 }
 
 /*

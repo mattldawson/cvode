@@ -227,6 +227,26 @@ typedef void (*CVErrHandlerFn)(int error_code,
 			       char *msg, void *user_data); 
 
 /*
+ * -----------------------------------------------------------------
+ * Type : CVDlsGuessHelperFn
+ * -----------------------------------------------------------------
+ * A function that attempts to improve on guesses for state y_n
+ * sent to the linear solver.
+ * The function guess_helper takes as input the current time t_n and
+ * time step h_n, the current guess for y_n, and the change in y
+ * from t_n-1 to t_n, hf.
+ *
+ * A CVDlsGuessHelperFn should improve the guess vectors y_n and hf,
+ * if possible, or else return the original guess vectors.
+ * -----------------------------------------------------------------
+ */
+
+typedef void  (*CVDlsGuessHelperFn)(const realtype t_n, const realtype h_n,
+                                    N_Vector y_n, N_Vector hf,
+                                    void *user_data, N_Vector tmp1,
+                                    N_Vector tmp2);
+
+/*
  * =================================================================
  *          U S E R - C A L L A B L E   R O U T I N E S
  * =================================================================
@@ -267,6 +287,11 @@ SUNDIALS_EXPORT void *CVodeCreate(int lmm, int iter);
  * -----------------------------------------------------------------
  *                         |
  * CVodeSetErrHandlerFn    | user-provided ErrHandler function.
+ *                         | [internal]
+ *                         |
+ * CVodeSetDlsGuessHelper  | user-provided function to improve
+ *                         | guesses for y_n sent to the linear
+ *                         | solver.
  *                         | [internal]
  *                         |
  * CVodeSetErrFile         | the file pointer for an error file
@@ -367,6 +392,7 @@ SUNDIALS_EXPORT void *CVodeCreate(int lmm, int iter);
  */
 
 SUNDIALS_EXPORT int CVodeSetErrHandlerFn(void *cvode_mem, CVErrHandlerFn ehfun, void *eh_data);
+SUNDIALS_EXPORT int CVodeSetDlsGuessHelper(void *cvode_mem, CVDlsGuessHelperFn guessfun);
 SUNDIALS_EXPORT int CVodeSetErrFile(void *cvode_mem, FILE *errfp);
 SUNDIALS_EXPORT int CVodeSetUserData(void *cvode_mem, void *user_data);
 SUNDIALS_EXPORT int CVodeSetMaxOrd(void *cvode_mem, int maxord);

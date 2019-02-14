@@ -239,6 +239,11 @@ typedef struct CVodeMemRec {
   FILE *cv_errfp;             /* CVODE error messages are sent to errfp       */
 
   /*-------------------------
+    Dls guess helper function
+    -------------------------*/
+  CVDlsGuessHelperFn cv_ghfun;/* guesses for state y_n are improved by ghfun  */
+
+  /*-------------------------
     Stability Limit Detection
     -------------------------*/
 
