@@ -21,7 +21,7 @@
  * -----------------------------------------------------------------
  */
 //#define PMC_DEBUG
-#define PMC_DEBUG_SPEC_ 0
+#define PMC_DEBUG_SPEC_ 45
 
 /*=================================================================*/
 /*             Import Header Files                                 */
@@ -1608,10 +1608,20 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     return(SUNFALSE);
   }
 
+  cv_mem->cv_acor_init = N_VClone(tmpl);
+  if (cv_mem->cv_acor_init == NULL) {
+    N_VDestroy(cv_mem->cv_tempv);
+    N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_ewt);
+    N_VDestroy(cv_mem->cv_acor);
+    return(SUNFALSE);
+  }
+
   cv_mem->cv_ftemp = N_VClone(tmpl);
   if (cv_mem->cv_ftemp == NULL) {
-    N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
+    N_VDestroy(cv_mem->cv_tempv1);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1624,8 +1634,9 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     if (cv_mem->cv_zn[j] == NULL) {
       N_VDestroy(cv_mem->cv_ewt);
       N_VDestroy(cv_mem->cv_acor);
-      N_VDestroy(cv_mem->cv_tempv1);
+      N_VDestroy(cv_mem->cv_acor_init);
       N_VDestroy(cv_mem->cv_tempv);
+      N_VDestroy(cv_mem->cv_tempv1);
       N_VDestroy(cv_mem->cv_ftemp);
       for (i=0; i < j; i++) N_VDestroy(cv_mem->cv_zn[i]);
       return(SUNFALSE);
@@ -1658,6 +1669,7 @@ static void cvFreeVectors(CVodeMem cv_mem)
   N_VDestroy(cv_mem->cv_acor);
   N_VDestroy(cv_mem->cv_tempv);
   N_VDestroy(cv_mem->cv_tempv1);
+  N_VDestroy(cv_mem->cv_acor_init);
   N_VDestroy(cv_mem->cv_ftemp);
   for (j=0; j <= maxord; j++) N_VDestroy(cv_mem->cv_zn[j]);
 
@@ -1979,7 +1991,7 @@ static int cvStep(CVodeMem cv_mem)
     PMC_DEBUG_PRINT("After setting");
 
     nflag = cvNls(cv_mem, nflag);
-    PMC_DEBUG_PRINT("After NLS");
+    PMC_DEBUG_PRINT_INT("After NLS", 100+nflag);
     kflag = cvHandleNFlag(cv_mem, &nflag, saved_t, &ncf);
 
     /* Go back in loop if we need to predict again (nflag=PREV_CONV_FAIL)*/
@@ -1990,6 +2002,7 @@ static int cvStep(CVodeMem cv_mem)
 
     /* Perform error test (nflag=CV_SUCCESS) */
     eflag = cvDoErrorTest(cv_mem, &nflag, saved_t, &nef, &dsm);
+    PMC_DEBUG_PRINT_INT("After error test", 100+eflag);
 
     /* Go back in loop if we need to predict again (nflag=PREV_ERR_FAIL) */
     if (eflag == TRY_AGAIN)  continue;
@@ -2254,15 +2267,6 @@ static void cvPredict(CVodeMem cv_mem)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
-
-  /* Call a user-supplied function to improve guesses for zn(0), if one exists */
-  PMC_DEBUG_PRINT_FULL("Calling guess helper");
-  if (cv_mem->cv_ghfun) {
-    cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
-                     cv_mem->cv_zn[1], cv_mem->cv_user_data, cv_mem->cv_tempv,
-                     cv_mem->cv_tempv1);
-  }
-  PMC_DEBUG_PRINT_FULL("Returned from guess helper");
 
 }
 
@@ -2585,6 +2589,7 @@ static int cvNlsFunctional(CVodeMem cv_mem)
                  cv_mem->cv_zn[1], cv_mem->cv_tempv);
     N_VScale(cv_mem->cv_rl1, cv_mem->cv_tempv, cv_mem->cv_tempv);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_tempv, cv_mem->cv_y);
+
     /* Get WRMS norm of current correction to use in convergence test */
     N_VLinearSum(ONE, cv_mem->cv_tempv, -ONE, cv_mem->cv_acor, cv_mem->cv_acor);
     del = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
@@ -2602,8 +2607,13 @@ static int cvNlsFunctional(CVodeMem cv_mem)
 
     /* Stop at maxcor iterations or if iter. seems to be diverging */
     m++;
-    if ((m==cv_mem->cv_maxcor) || ((m >= 2) && (del > RDIV * delp)))
+    if (m==cv_mem->cv_maxcor) {
+      PMC_DEBUG_PRINT_INT("Max convergence attempts made", m);
       return(CONV_FAIL);
+    } else if ((m >= 2) && (del > RDIV * delp)) {
+      PMC_DEBUG_PRINT_INT("Divergence", (int) (100 * del) );
+      return(CONV_FAIL);
+    }
 
     /* Save norm of correction, evaluate f, and loop again */
     delp = del;
@@ -2664,24 +2674,37 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     callSetup = SUNFALSE;
   }
 
+  /* Call a user-supplied function to improve guesses for zn(0), if one exists */
+  N_VConst(ZERO, cv_mem->cv_acor_init);
+  if (cv_mem->cv_ghfun) {
+    PMC_DEBUG_PRINT("Calling guess helper");
+    N_VScale(cv_mem->cv_rl1, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
+    cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
+                     cv_mem->cv_ftemp, cv_mem->cv_user_data, cv_mem->cv_tempv,
+                     cv_mem->cv_acor_init);
+    PMC_DEBUG_PRINT("Returned from guess helper");
+  }
+
   /* Looping point for the solution of the nonlinear system.
      Evaluate f at the predicted y, call lsetup if indicated, and
      call cvNewtonIteration for the Newton iteration itself.      */
 
-
   for(;;) {
 
+    /* Load prediction into y vector */
+    N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
+
     PMC_DEBUG_PRINT("Request derivative");
-    retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
+    retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-    PMC_DEBUG_PRINT("Received derivative");
+    PMC_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
 
     if (callSetup) {
       PMC_DEBUG_PRINT("Doing lsetup");
-      ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_zn[0],
+      ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
       cv_mem->cv_nsetups++;
@@ -2694,12 +2717,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       if (ier > 0) return(CONV_FAIL);
     }
 
-    /* Set acor to zero and load prediction into y vector */
-    N_VConst(ZERO, cv_mem->cv_acor);
-    N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_y);
+    /* Set acor to the initial guess for adjustments to the y vector */
+    N_VScale(ONE, cv_mem->cv_acor_init, cv_mem->cv_acor);
 
     /* Do the Newton iteration */
+    PMC_DEBUG_PRINT("Doing Newton iteration");
     ier = cvNewtonIteration(cv_mem);
+    PMC_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
     /* If there is a convergence failure and the Jacobian-related
        data appears not to be current, loop again with a call to lsetup
@@ -2749,7 +2773,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     PMC_DEBUG_PRINT("Calling linear solver");
     retval = cv_mem->cv_lsolve(cv_mem, b, cv_mem->cv_ewt,
                                cv_mem->cv_y, cv_mem->cv_ftemp);
-    PMC_DEBUG_PRINT("After linear solver");
+    PMC_DEBUG_PRINT_INT("After linear solver", retval+100);
     cv_mem->cv_nni++;
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
@@ -2760,6 +2784,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
       if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup))
         return(TRY_AGAIN);
       else
+        PMC_DEBUG_PRINT("Recoverable failure from f() with good Jac");
         return(CONV_FAIL);
     }
 
@@ -2776,8 +2801,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
 
     if (dcon <= ONE) {
-      cv_mem->cv_acnrm = (m==0) ?
-        del : N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
+      cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
       cv_mem->cv_jcur = SUNFALSE;
       return(CV_SUCCESS); /* Nonlinear system was solved successfully */
     }
@@ -2788,10 +2812,12 @@ static int cvNewtonIteration(CVodeMem cv_mem)
        If still not converged and Jacobian data is not current,
        signal to try the solution again                            */
     if ((m == cv_mem->cv_maxcor) || ((m >= 2) && (del > RDIV*delp))) {
-      if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup))
+      if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup)) {
         return(TRY_AGAIN);
-      else
+      } else {
+        PMC_DEBUG_PRINT_INT("Divergence or maxcor reached", m);
         return(CONV_FAIL);
+      }
     }
 
     /* Save norm of correction, evaluate f, and loop again */
@@ -2800,7 +2826,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
-    PMC_DEBUG_PRINT("Received derivative");
+    PMC_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) {

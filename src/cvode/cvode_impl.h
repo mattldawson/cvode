@@ -101,6 +101,7 @@ typedef struct CVodeMemRec {
   N_Vector cv_acor;    /* In the context of the solution of the nonlinear
                           equation, acor = y_n(m) - y_n(0). On return, 
                           this vector is scaled to give the est. local err.   */
+  N_Vector cv_acor_init; /* Initial guess for acor                            */
   N_Vector cv_tempv;   /* temporary storage vector                            */
   N_Vector cv_tempv1;  /* temporary storage vector                            */
   N_Vector cv_ftemp;   /* temporary storage vector                            */
