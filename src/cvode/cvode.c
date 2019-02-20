@@ -21,7 +21,7 @@
  * -----------------------------------------------------------------
  */
 //#define PMC_DEBUG
-#define PMC_DEBUG_SPEC_ 45
+#define PMC_DEBUG_SPEC_ 0
 
 /*=================================================================*/
 /*             Import Header Files                                 */
@@ -40,11 +40,13 @@
 #ifdef PMC_DEBUG
 #define PMC_DEBUG_PRINT(x) pmc_debug_print(cv_mem, x, false, 0, __LINE__, __func__)
 #define PMC_DEBUG_PRINT_INT(x,y) pmc_debug_print(cv_mem, x, false, y, __LINE__, __func__)
+#define PMC_DEBUG_PRINT_REAL(x,y) pmc_debug_print_real(cv_mem, x, false, y, __LINE__, __func__)
 #define PMC_DEBUG_PRINT_FULL(x) pmc_debug_print(cv_mem, x, true, 0, __LINE__, __func__)
 typedef enum { false, true } bool;
 void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
     const int int_val, const int line, const char *func)
 {
+  int i;
   printf("\n[DEBUG] line %4d in %-20s(): %-25s %-4.0d t_n = %le h = %le q = %d "
          "hin = %le species %d(y = %le zn[0] = %le zn[1] = %le ftemp = %le)",
          line, func, message, int_val, cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_q,
@@ -54,18 +56,45 @@ void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
          NV_DATA_S(cv_mem->cv_zn[1])[PMC_DEBUG_SPEC_],
          NV_DATA_S(cv_mem->cv_ftemp)[PMC_DEBUG_SPEC_]);
   if (do_full) {
-    for (int i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
-      printf("\n  y[%d] = %le zn[0][%d] = %le zn[1][%d] = %le ftemp[%d] = %le",
+    for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
+      printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
          i, NV_DATA_S(cv_mem->cv_y)[i],
          i, NV_DATA_S(cv_mem->cv_zn[0])[i],
          i, NV_DATA_S(cv_mem->cv_zn[1])[i],
-         i, NV_DATA_S(cv_mem->cv_ftemp)[i]);
+         i, NV_DATA_S(cv_mem->cv_ftemp)[i],
+         i, NV_DATA_S(cv_mem->cv_acor_init)[i],
+         i, NV_DATA_S(cv_mem->cv_acor)[i]);
+    }
+  }
+}
+void pmc_debug_print_real(CVodeMem cv_mem, const char *message, bool do_full,
+    const double real_val, const int line, const char *func)
+{
+  int i;
+  printf("\n[DEBUG] line %4d in %-20s(): %-25s %le t_n = %le h = %le q = %d "
+         "hin = %le species %d(y = %le zn[0] = %le zn[1] = %le ftemp = %le)",
+         line, func, message, real_val, cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_q,
+         cv_mem->cv_hin, PMC_DEBUG_SPEC_,
+         NV_DATA_S(cv_mem->cv_y)[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[0])[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[1])[PMC_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_ftemp)[PMC_DEBUG_SPEC_]);
+  if (do_full) {
+    for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
+      printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
+         i, NV_DATA_S(cv_mem->cv_y)[i],
+         i, NV_DATA_S(cv_mem->cv_zn[0])[i],
+         i, NV_DATA_S(cv_mem->cv_zn[1])[i],
+         i, NV_DATA_S(cv_mem->cv_ftemp)[i],
+         i, NV_DATA_S(cv_mem->cv_acor_init)[i],
+         i, NV_DATA_S(cv_mem->cv_acor)[i]);
     }
   }
 }
 #else
 #define PMC_DEBUG_PRINT(x)
 #define PMC_DEBUG_PRINT_INT(x,y)
+#define PMC_DEBUG_PRINT_REAL(x,y)
 #define PMC_DEBUG_PRINT_FULL(x)
 #endif
 
@@ -2682,7 +2711,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                      cv_mem->cv_ftemp, cv_mem->cv_user_data, cv_mem->cv_tempv,
                      cv_mem->cv_acor_init);
-    PMC_DEBUG_PRINT("Returned from guess helper");
+    PMC_DEBUG_PRINT_FULL("Returned from guess helper");
   }
 
   /* Looping point for the solution of the nonlinear system.
@@ -2790,15 +2819,19 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
     /* Get WRMS norm of correction; add correction to acor and y */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
+    PMC_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
     N_VLinearSum(ONE, cv_mem->cv_acor, ONE, b, cv_mem->cv_acor);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
+    PMC_DEBUG_PRINT_FULL("Updated correction and predicted y");
 
     /* Test for convergence.  If m > 0, an estimate of the convergence
        rate constant is stored in crate, and used in the test.        */
     if (m > 0) {
       cv_mem->cv_crate = SUNMAX(CRDOWN * cv_mem->cv_crate, del/delp);
+      PMC_DEBUG_PRINT_REAL("Got new convergence rate", cv_mem->cv_crate);
     }
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
+    PMC_DEBUG_PRINT_REAL("Got dcon", dcon);
 
     if (dcon <= ONE) {
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
