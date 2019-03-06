@@ -24,9 +24,54 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
+#include <string.h>
 
 #include <sunlinsol/sunlinsol_klu.h>
 #include <sundials/sundials_math.h>
+
+// define PMC_DEBUG to print debugging output
+//#define PMC_DEBUG
+
+#ifdef PMC_DEBUG
+#define PMC_DEBUG_PRINT(x) pmc_debug_print_sunlinsol(x, 0, __LINE__, __func__)
+#define PMC_DEBUG_PRINT_INT(x,y) pmc_debug_print_sunlinsol(x, y, __LINE__, __func__)
+void pmc_debug_print_sunlinsol(const char *message, const int int_val, const int line,
+    const char *func)
+{
+  printf("\n[DEBUG] line %4d in sunlinsol_klu::%-20s(): %-25s %-4.0d", line,
+         func, message, int_val);
+}
+#define PMC_DEBUG_PRINT_MATRIX(x,M) pmc_debug_print_matrix_sunlinsol(x, M, __LINE__, __func__)
+void pmc_debug_print_matrix_sunlinsol(const char *message, SUNMatrix M, const int line,
+    const char *func)
+{
+  int i, j, i_elem;
+  printf("\n[DEBUG] line %-4d in sunlinsol_klu::%-20s() : %-25s Matrix data:", line, func,
+      message);
+  printf("\n      ");
+  for( i=0; i<SM_ROWS_S(M); i++ ) printf("    [%3d]    ", i);
+  for( i=0, i_elem=0; i<SM_ROWS_S(M); i++ ) {
+    printf("\n[%3d] ", i);
+    for( j=0; j<SM_COLUMNS_S(M); j++) {
+      if( j == SM_INDEXVALS_S(M)[i_elem] && i_elem < SM_INDEXPTRS_S(M)[i+1] ) {
+        if( SM_DATA_S(M)[i_elem] == 0.0 ) {
+          printf("    0.0    ");
+        } else {
+          printf(" % -1.4le ", SM_DATA_S(M)[i_elem]);
+        }
+        i_elem++;
+      } else {
+        printf("     -     ");
+      }
+    }
+  }
+}
+#else
+#define PMC_DEBUG_PRINT(x)
+#define PMC_DEBUG_PRINT_INT(x,y)
+#define PMC_DEBUG_PRINT_MATRIX(x,M)
+#endif
 
 #define ZERO      RCONST(0.0)
 #define ONE       RCONST(1.0)
@@ -243,9 +288,12 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
   
   uround_twothirds = SUNRpowerR(UNIT_ROUNDOFF,TWOTHIRDS);
 
+  PMC_DEBUG_PRINT("Entering LinSol setup");
+
   /* Ensure that A is a sparse matrix */
   if (SUNMatGetID(A) != SUNMATRIX_SPARSE) {
     LASTFLAG(S) = SUNLS_ILL_INPUT;
+    PMC_DEBUG_PRINT("Non-sparse matrix");
     return(LASTFLAG(S));
   }
   
@@ -261,6 +309,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
                                   &COMMON(S));
     if (SYMBOLIC(S) == NULL) {
       LASTFLAG(S) = SUNLS_PACKAGE_FAIL_UNREC;
+      PMC_DEBUG_PRINT("Symbolic analysis failed");
       return(LASTFLAG(S));
     }
 
@@ -276,12 +325,15 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
                                 &COMMON(S));
     if (NUMERIC(S) == NULL) {
       LASTFLAG(S) = SUNLS_PACKAGE_FAIL_UNREC;
+      PMC_DEBUG_PRINT("LU factorization failed");
       return(LASTFLAG(S));
     }
 
     FIRSTFACTORIZE(S) = 0;
 
   } else {   /* not the first decomposition, so just refactor */
+
+    PMC_DEBUG_PRINT_MATRIX("Refactoring", A);
 
     retval = sun_klu_refactor((KLU_INDEXTYPE*) SUNSparseMatrix_IndexPointers(A), 
                               (KLU_INDEXTYPE*) SUNSparseMatrix_IndexValues(A), 
@@ -291,6 +343,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
                               &COMMON(S));
     if (retval == 0) {
       LASTFLAG(S) = SUNLS_PACKAGE_FAIL_REC;
+      PMC_DEBUG_PRINT("Refactorization failed");
       return(LASTFLAG(S));
     }
     
@@ -303,6 +356,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
     retval = sun_klu_rcond(SYMBOLIC(S), NUMERIC(S), &COMMON(S));
     if (retval == 0) {
       LASTFLAG(S) = SUNLS_PACKAGE_FAIL_REC;
+      PMC_DEBUG_PRINT("Cheap estimate too small");
       return(LASTFLAG(S));
     }
 
@@ -317,6 +371,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
                                &COMMON(S));
       if (retval == 0) {
 	LASTFLAG(S) = SUNLS_PACKAGE_FAIL_REC;
+        PMC_DEBUG_PRINT("Condition estimate failed");
         return(LASTFLAG(S));
       }
       
@@ -332,6 +387,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
                                     &COMMON(S));
 	if (NUMERIC(S) == NULL) {
 	  LASTFLAG(S) = SUNLS_PACKAGE_FAIL_UNREC;
+          PMC_DEBUG_PRINT("Factorization after too large condition number failed");
           return(LASTFLAG(S));
 	}
       }
@@ -340,6 +396,7 @@ int SUNLinSolSetup_KLU(SUNLinearSolver S, SUNMatrix A)
   }
 
   LASTFLAG(S) = SUNLS_SUCCESS;
+  PMC_DEBUG_PRINT("Linear solver - !Success!");
   return(LASTFLAG(S));
 }
 
