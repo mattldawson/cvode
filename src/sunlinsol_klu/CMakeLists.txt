@@ -39,6 +39,11 @@ INCLUDE_DIRECTORIES(.)
 # Define C preprocessor flag -DBUILD_SUNDIALS_LIBRARY 
 ADD_DEFINITIONS(-DBUILD_SUNDIALS_LIBRARY)
 
+# Add debugging functions if indicated
+IF(SUNDIALS_DEBUG)
+  ADD_DEFINITIONS(-DSUNDIALS_DEBUG)
+ENDIF(SUNDIALS_DEBUG)
+
 # Rules for building and installing the static library:
 #  - Add the build target for the SUNLINSOLKLU library
 #  - Set the library name and make sure it is not deleted

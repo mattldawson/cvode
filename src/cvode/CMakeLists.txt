@@ -87,6 +87,11 @@ INCLUDE_DIRECTORIES(../sundials)
 # Define C preprocessor flag -DBUILD_SUNDIALS_LIBRARY 
 ADD_DEFINITIONS(-DBUILD_SUNDIALS_LIBRARY)
 
+# Add debugging functions if indicated
+IF(SUNDIALS_DEBUG)
+  ADD_DEFINITIONS(-DSUNDIALS_DEBUG)
+ENDIF(SUNDIALS_DEBUG)
+
 # Build the static library
 IF(BUILD_STATIC_LIBS)
 

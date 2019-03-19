@@ -120,6 +120,12 @@ INCLUDE(SundialsCMakeMacros)
 INCLUDE(SundialsDeprecated)
 
 # ---------------------------------------------------------------
+# Compile debugging functions?
+# ---------------------------------------------------------------
+
+OPTION(SUNDIALS_DEBUG "Include debugging functions" OFF)
+
+# ---------------------------------------------------------------
 # Which modules to build?
 # ---------------------------------------------------------------
 

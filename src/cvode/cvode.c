@@ -20,8 +20,7 @@
  * It is independent of the CVODE linear solver in use.
  * -----------------------------------------------------------------
  */
-//#define PMC_DEBUG
-#define PMC_DEBUG_SPEC_ 0
+#define SUNDIALS_DEBUG_SPEC_ 0
 
 /*=================================================================*/
 /*             Import Header Files                                 */
@@ -37,24 +36,25 @@
 #include <sundials/sundials_types.h>
 #include <nvector/nvector_serial.h>
 
-#ifdef PMC_DEBUG
-#define PMC_DEBUG_PRINT(x) pmc_debug_print(cv_mem, x, false, 0, __LINE__, __func__)
-#define PMC_DEBUG_PRINT_INT(x,y) pmc_debug_print(cv_mem, x, false, y, __LINE__, __func__)
-#define PMC_DEBUG_PRINT_REAL(x,y) pmc_debug_print_real(cv_mem, x, false, y, __LINE__, __func__)
-#define PMC_DEBUG_PRINT_FULL(x) pmc_debug_print(cv_mem, x, true, 0, __LINE__, __func__)
+#ifdef SUNDIALS_DEBUG
+#define SUNDIALS_DEBUG_PRINT(x) pmc_debug_print(cv_mem, x, false, 0, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_INT(x,y) pmc_debug_print(cv_mem, x, false, y, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_REAL(x,y) pmc_debug_print_real(cv_mem, x, false, y, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_FULL(x) pmc_debug_print(cv_mem, x, true, 0, __LINE__, __func__)
 typedef enum { false, true } bool;
 void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
     const int int_val, const int line, const char *func)
 {
   int i;
+  if (cv_mem->cv_debug_out == SUNFALSE) return;
   printf("\n[DEBUG] line %4d in %-20s(): %-25s %-4.0d t_n = %le h = %le q = %d "
          "hin = %le species %d(y = %le zn[0] = %le zn[1] = %le ftemp = %le)",
          line, func, message, int_val, cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_q,
-         cv_mem->cv_hin, PMC_DEBUG_SPEC_,
-         NV_DATA_S(cv_mem->cv_y)[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_zn[0])[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_zn[1])[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_ftemp)[PMC_DEBUG_SPEC_]);
+         cv_mem->cv_hin, SUNDIALS_DEBUG_SPEC_,
+         NV_DATA_S(cv_mem->cv_y)[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[0])[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[1])[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_ftemp)[SUNDIALS_DEBUG_SPEC_]);
   if (do_full) {
     for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
       printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
@@ -71,14 +71,15 @@ void pmc_debug_print_real(CVodeMem cv_mem, const char *message, bool do_full,
     const double real_val, const int line, const char *func)
 {
   int i;
+  if (cv_mem->cv_debug_out == SUNFALSE) return;
   printf("\n[DEBUG] line %4d in %-20s(): %-25s %le t_n = %le h = %le q = %d "
          "hin = %le species %d(y = %le zn[0] = %le zn[1] = %le ftemp = %le)",
          line, func, message, real_val, cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_q,
-         cv_mem->cv_hin, PMC_DEBUG_SPEC_,
-         NV_DATA_S(cv_mem->cv_y)[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_zn[0])[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_zn[1])[PMC_DEBUG_SPEC_],
-         NV_DATA_S(cv_mem->cv_ftemp)[PMC_DEBUG_SPEC_]);
+         cv_mem->cv_hin, SUNDIALS_DEBUG_SPEC_,
+         NV_DATA_S(cv_mem->cv_y)[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[0])[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_zn[1])[SUNDIALS_DEBUG_SPEC_],
+         NV_DATA_S(cv_mem->cv_ftemp)[SUNDIALS_DEBUG_SPEC_]);
   if (do_full) {
     for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
       printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
@@ -92,10 +93,10 @@ void pmc_debug_print_real(CVodeMem cv_mem, const char *message, bool do_full,
   }
 }
 #else
-#define PMC_DEBUG_PRINT(x)
-#define PMC_DEBUG_PRINT_INT(x,y)
-#define PMC_DEBUG_PRINT_REAL(x,y)
-#define PMC_DEBUG_PRINT_FULL(x)
+#define SUNDIALS_DEBUG_PRINT(x)
+#define SUNDIALS_DEBUG_PRINT_INT(x,y)
+#define SUNDIALS_DEBUG_PRINT_REAL(x,y)
+#define SUNDIALS_DEBUG_PRINT_FULL(x)
 #endif
 
 /*=================================================================*/
@@ -430,6 +431,7 @@ void *CVodeCreate(int lmm, int iter)
   cv_mem->cv_e_data     = NULL;
   cv_mem->cv_ehfun      = cvErrHandler;
   cv_mem->cv_eh_data    = cv_mem;
+  cv_mem->cv_debug_out  = SUNFALSE;
   cv_mem->cv_ghfun      = NULL;
   cv_mem->cv_errfp      = stderr;
   cv_mem->cv_qmax       = maxord;
@@ -1084,11 +1086,11 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Call f at (t0,y0), set zn[1] = y'(t0),
        set initial h (from H0 or cvHin), and scale zn[1] by h.
        Also check for zeros of root function g at and near t0.    */
-    PMC_DEBUG_PRINT("Request derivative");
+    SUNDIALS_DEBUG_PRINT("Request derivative");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                           cv_mem->cv_zn[1], cv_mem->cv_user_data);
     N_VScale(ONE, cv_mem->cv_zn[0], yout);
-    PMC_DEBUG_PRINT("Received derivative");
+    SUNDIALS_DEBUG_PRINT("Received derivative");
 
     cv_mem->cv_nfe++;
     if (retval < 0) {
@@ -1115,7 +1117,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Set initial h (from H0 or cvHin). */
 
     cv_mem->cv_h = cv_mem->cv_hin;
-    PMC_DEBUG_PRINT("After setting h to h_in");
+    SUNDIALS_DEBUG_PRINT("After setting h to h_in");
     if ( (cv_mem->cv_h != ZERO) && ((tout-cv_mem->cv_tn)*cv_mem->cv_h < ZERO) ) {
       cvProcessError(cv_mem, CV_ILL_INPUT, "CVODE", "CVode", MSGCV_BAD_H0);
       return(CV_ILL_INPUT);
@@ -1150,7 +1152,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
     N_VScale(cv_mem->cv_h, cv_mem->cv_zn[1], cv_mem->cv_zn[1]);
 
-    PMC_DEBUG_PRINT("After initial scaling of zn[1] by h0");
+    SUNDIALS_DEBUG_PRINT("After initial scaling of zn[1] by h0");
 
     /* Check for zeros of root function g at and near t0. */
 
@@ -1300,7 +1302,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
   nstloc = 0;
   for(;;) {
 
-    PMC_DEBUG_PRINT_INT("Beginning timestep", nstloc);
+    SUNDIALS_DEBUG_PRINT_INT("Beginning timestep", nstloc);
 
     cv_mem->cv_next_h = cv_mem->cv_h;
     cv_mem->cv_next_q = cv_mem->cv_q;
@@ -1963,10 +1965,10 @@ static int cvYddNorm(CVodeMem cv_mem, realtype hg, realtype *yddnrm)
   int retval;
 
   N_VLinearSum(hg, cv_mem->cv_zn[1], ONE, cv_mem->cv_zn[0], cv_mem->cv_y);
-  PMC_DEBUG_PRINT("Request derivative");
+  SUNDIALS_DEBUG_PRINT("Request derivative");
   retval = cv_mem->cv_f(cv_mem->cv_tn+hg, cv_mem->cv_y,
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
-  PMC_DEBUG_PRINT("Received derivative");
+  SUNDIALS_DEBUG_PRINT("Received derivative");
   cv_mem->cv_nfe++;
   if (retval < 0) return(CV_RHSFUNC_FAIL);
   if (retval > 0) return(RHSFUNC_RECVR);
@@ -2015,12 +2017,12 @@ static int cvStep(CVodeMem cv_mem)
   for(;;) {
 
     cvPredict(cv_mem);
-    PMC_DEBUG_PRINT("After prediction");
+    SUNDIALS_DEBUG_PRINT("After prediction");
     cvSet(cv_mem);
-    PMC_DEBUG_PRINT("After setting");
+    SUNDIALS_DEBUG_PRINT("After setting");
 
     nflag = cvNls(cv_mem, nflag);
-    PMC_DEBUG_PRINT_INT("After NLS", 100+nflag);
+    SUNDIALS_DEBUG_PRINT_INT("After NLS", 100+nflag);
     kflag = cvHandleNFlag(cv_mem, &nflag, saved_t, &ncf);
 
     /* Go back in loop if we need to predict again (nflag=PREV_CONV_FAIL)*/
@@ -2031,7 +2033,7 @@ static int cvStep(CVodeMem cv_mem)
 
     /* Perform error test (nflag=CV_SUCCESS) */
     eflag = cvDoErrorTest(cv_mem, &nflag, saved_t, &nef, &dsm);
-    PMC_DEBUG_PRINT_INT("After error test", 100+eflag);
+    SUNDIALS_DEBUG_PRINT_INT("After error test", 100+eflag);
 
     /* Go back in loop if we need to predict again (nflag=PREV_ERR_FAIL) */
     if (eflag == TRY_AGAIN)  continue;
@@ -2594,10 +2596,10 @@ static int cvNlsFunctional(CVodeMem cv_mem)
   cv_mem->cv_crate = ONE;
   m = 0;
 
-  PMC_DEBUG_PRINT("Request derivative");
+  SUNDIALS_DEBUG_PRINT("Request derivative");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
-  PMC_DEBUG_PRINT("Received derivative");
+  SUNDIALS_DEBUG_PRINT("Received derivative");
   cv_mem->cv_nfe++;
   if (retval < 0) return(CV_RHSFUNC_FAIL);
   if (retval > 0) return(RHSFUNC_RECVR);
@@ -2637,20 +2639,20 @@ static int cvNlsFunctional(CVodeMem cv_mem)
     /* Stop at maxcor iterations or if iter. seems to be diverging */
     m++;
     if (m==cv_mem->cv_maxcor) {
-      PMC_DEBUG_PRINT_INT("Max convergence attempts made", m);
+      SUNDIALS_DEBUG_PRINT_INT("Max convergence attempts made", m);
       return(CONV_FAIL);
     } else if ((m >= 2) && (del > RDIV * delp)) {
-      PMC_DEBUG_PRINT_INT("Divergence", (int) (100 * del) );
+      SUNDIALS_DEBUG_PRINT_INT("Divergence", (int) (100 * del) );
       return(CONV_FAIL);
     }
 
     /* Save norm of correction, evaluate f, and loop again */
     delp = del;
 
-    PMC_DEBUG_PRINT("Request derivative");
+    SUNDIALS_DEBUG_PRINT("Request derivative");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_tempv, cv_mem->cv_user_data);
-    PMC_DEBUG_PRINT("Received derivative");
+    SUNDIALS_DEBUG_PRINT("Received derivative");
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
@@ -2706,12 +2708,12 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   /* Call a user-supplied function to improve guesses for zn(0), if one exists */
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
-    PMC_DEBUG_PRINT("Calling guess helper");
+    SUNDIALS_DEBUG_PRINT("Calling guess helper");
     N_VScale(cv_mem->cv_rl1, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
     cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                      cv_mem->cv_ftemp, cv_mem->cv_user_data, cv_mem->cv_tempv,
                      cv_mem->cv_acor_init);
-    PMC_DEBUG_PRINT_FULL("Returned from guess helper");
+    SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
   }
 
   /* Looping point for the solution of the nonlinear system.
@@ -2723,20 +2725,20 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     /* Load prediction into y vector */
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
 
-    PMC_DEBUG_PRINT("Request derivative");
+    SUNDIALS_DEBUG_PRINT("Request derivative");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-    PMC_DEBUG_PRINT_INT("Received derivative", retval+100);
+    SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
 
     if (callSetup) {
-      PMC_DEBUG_PRINT("Doing lsetup");
+      SUNDIALS_DEBUG_PRINT("Doing lsetup");
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
-      PMC_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
+      SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
       cv_mem->cv_nsetups++;
       callSetup = SUNFALSE;
       cv_mem->cv_gamrat = cv_mem->cv_crate = ONE;
@@ -2751,9 +2753,9 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     N_VScale(ONE, cv_mem->cv_acor_init, cv_mem->cv_acor);
 
     /* Do the Newton iteration */
-    PMC_DEBUG_PRINT("Doing Newton iteration");
+    SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
     ier = cvNewtonIteration(cv_mem);
-    PMC_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
+    SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
     /* If there is a convergence failure and the Jacobian-related
        data appears not to be current, loop again with a call to lsetup
@@ -2800,10 +2802,10 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
-    PMC_DEBUG_PRINT("Calling linear solver");
+    SUNDIALS_DEBUG_PRINT("Calling linear solver");
     retval = cv_mem->cv_lsolve(cv_mem, b, cv_mem->cv_ewt,
                                cv_mem->cv_y, cv_mem->cv_ftemp);
-    PMC_DEBUG_PRINT_INT("After linear solver", retval+100);
+    SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval+100);
     cv_mem->cv_nni++;
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
@@ -2814,25 +2816,25 @@ static int cvNewtonIteration(CVodeMem cv_mem)
       if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup))
         return(TRY_AGAIN);
       else
-        PMC_DEBUG_PRINT("Recoverable failure from f() with good Jac");
+        SUNDIALS_DEBUG_PRINT("Recoverable failure from f() with good Jac");
         return(CONV_FAIL);
     }
 
     /* Get WRMS norm of correction; add correction to acor and y */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
-    PMC_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
+    SUNDIALS_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
     N_VLinearSum(ONE, cv_mem->cv_acor, ONE, b, cv_mem->cv_acor);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
-    PMC_DEBUG_PRINT_FULL("Updated correction and predicted y");
+    SUNDIALS_DEBUG_PRINT_FULL("Updated correction and predicted y");
 
     /* Test for convergence.  If m > 0, an estimate of the convergence
        rate constant is stored in crate, and used in the test.        */
     if (m > 0) {
       cv_mem->cv_crate = SUNMAX(CRDOWN * cv_mem->cv_crate, del/delp);
-      PMC_DEBUG_PRINT_REAL("Got new convergence rate", cv_mem->cv_crate);
+      SUNDIALS_DEBUG_PRINT_REAL("Got new convergence rate", cv_mem->cv_crate);
     }
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
-    PMC_DEBUG_PRINT_REAL("Got dcon", dcon);
+    SUNDIALS_DEBUG_PRINT_REAL("Got dcon", dcon);
 
     if (dcon <= ONE) {
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
@@ -2849,18 +2851,18 @@ static int cvNewtonIteration(CVodeMem cv_mem)
       if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup)) {
         return(TRY_AGAIN);
       } else {
-        PMC_DEBUG_PRINT_INT("Divergence or maxcor reached", m);
+        SUNDIALS_DEBUG_PRINT_INT("Divergence or maxcor reached", m);
         return(CONV_FAIL);
       }
     }
 
     /* Save norm of correction, evaluate f, and loop again */
     delp = del;
-    PMC_DEBUG_PRINT("Request derivative");
+    SUNDIALS_DEBUG_PRINT("Request derivative");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
-    PMC_DEBUG_PRINT_INT("Received derivative", retval+100);
+    SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) {
@@ -3057,10 +3059,10 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_qwait = LONG_WAIT;
   cv_mem->cv_nscon = 0;
 
-  PMC_DEBUG_PRINT("Request derivative");
+  SUNDIALS_DEBUG_PRINT("Request derivative");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
-  PMC_DEBUG_PRINT("Received derivative");
+  SUNDIALS_DEBUG_PRINT("Received derivative");
   cv_mem->cv_nfe++;
   if (retval < 0)  return(CV_RHSFUNC_FAIL);
   if (retval > 0)  return(CV_UNREC_RHSFUNC_ERR);

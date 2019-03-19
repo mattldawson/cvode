@@ -59,6 +59,27 @@ int CVodeSetErrHandlerFn(void *cvode_mem, CVErrHandlerFn ehfun, void *eh_data)
 }
 
 /*
+ * CVodeSetDebugOut
+ *
+ * Flags whether to output debug information
+ */
+int CVodeSetDebugOut(void *cvode_mem, booleantype do_output)
+{
+  CVodeMem cv_mem;
+
+  if (cvode_mem==NULL) {
+    cvProcessError(NULL, CV_MEM_NULL, "CVODE", "CVodeSetDebugOut", MSGCV_NO_MEM);
+    return(CV_MEM_NULL);
+  }
+
+  cv_mem = (CVodeMem) cvode_mem;
+
+  cv_mem->cv_debug_out = do_output;
+
+  return(CV_SUCCESS);
+}
+
+/*
  * CVodeSetDlsGuessHelper
  *
  * Specifies the guess helper function

@@ -42,6 +42,7 @@
 #include <sundials/sundials_linearsolver.h>
 #include <sundials/sundials_matrix.h>
 #include <sundials/sundials_nvector.h>
+#include <sundials/sundials_types.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 #include "klu.h"
 
@@ -107,6 +108,8 @@ extern "C" {
  *        We create a typedef for this type of function pointer
  *        to suppress compiler warning messages about sunindextype 
  *        vs internal KLU index types.
+ *     debug_out -- flag indicating whether to output debugging
+ *        information.
  * -----------------------------------------------------------------
  */
 typedef sunindextype (*KLUSolveFn)(sun_klu_symbolic*, sun_klu_numeric*,
@@ -120,6 +123,7 @@ struct _SUNLinearSolverContent_KLU {
   sun_klu_numeric  *numeric;
   sun_klu_common   common;
   KLUSolveFn       klu_solver;
+  booleantype      debug_out;
 };
 
 typedef struct _SUNLinearSolverContent_KLU *SUNLinearSolverContent_KLU;
@@ -167,6 +171,8 @@ typedef struct _SUNLinearSolverContent_KLU *SUNLinearSolverContent_KLU;
  *          2 for the natural ordering.
  *      The default is 1 for COLAMD.
  *
+ *    SUNKLUSetDebugOut flags whether to output debugging
+ *    information.
  * -----------------------------------------------------------------
  */
 
@@ -178,6 +184,8 @@ SUNDIALS_EXPORT int SUNKLUReInit(SUNLinearSolver S, SUNMatrix A,
 SUNDIALS_EXPORT int SUNKLUSetOrdering(SUNLinearSolver S,
                                       int ordering_choice);
 
+SUNDIALS_EXPORT int SUNKLUSetDebugOut(SUNLinearSolver S,
+                                      booleantype do_output);
 /*
  * -----------------------------------------------------------------
  * KLU implementations of various useful linear solver operations

@@ -290,6 +290,10 @@ SUNDIALS_EXPORT void *CVodeCreate(int lmm, int iter);
  * CVodeSetErrHandlerFn    | user-provided ErrHandler function.
  *                         | [internal]
  *                         |
+ * CVodeSetDebugOut        | flag whether to output debugging
+ *                         | information.
+ *                         | [SUNFALSE]
+ *                         |
  * CVodeSetDlsGuessHelper  | user-provided function to improve
  *                         | guesses for y_n sent to the linear
  *                         | solver.
@@ -393,6 +397,7 @@ SUNDIALS_EXPORT void *CVodeCreate(int lmm, int iter);
  */
 
 SUNDIALS_EXPORT int CVodeSetErrHandlerFn(void *cvode_mem, CVErrHandlerFn ehfun, void *eh_data);
+SUNDIALS_EXPORT int CVodeSetDebugOut(void *cvode_mem, booleantype do_output);
 SUNDIALS_EXPORT int CVodeSetDlsGuessHelper(void *cvode_mem, CVDlsGuessHelperFn guessfun);
 SUNDIALS_EXPORT int CVodeSetErrFile(void *cvode_mem, FILE *errfp);
 SUNDIALS_EXPORT int CVodeSetUserData(void *cvode_mem, void *user_data);

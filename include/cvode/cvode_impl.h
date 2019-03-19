@@ -238,6 +238,7 @@ typedef struct CVodeMemRec {
   CVErrHandlerFn cv_ehfun;    /* error messages are handled by ehfun          */
   void *cv_eh_data;           /* data pointer passed to ehfun                 */
   FILE *cv_errfp;             /* CVODE error messages are sent to errfp       */
+  booleantype cv_debug_out;   /* Output debug info                            */
 
   /*-------------------------
     Dls guess helper function
