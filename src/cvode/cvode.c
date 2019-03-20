@@ -37,12 +37,11 @@
 #include <nvector/nvector_serial.h>
 
 #ifdef SUNDIALS_DEBUG
-#define SUNDIALS_DEBUG_PRINT(x) pmc_debug_print(cv_mem, x, false, 0, __LINE__, __func__)
-#define SUNDIALS_DEBUG_PRINT_INT(x,y) pmc_debug_print(cv_mem, x, false, y, __LINE__, __func__)
-#define SUNDIALS_DEBUG_PRINT_REAL(x,y) pmc_debug_print_real(cv_mem, x, false, y, __LINE__, __func__)
-#define SUNDIALS_DEBUG_PRINT_FULL(x) pmc_debug_print(cv_mem, x, true, 0, __LINE__, __func__)
-typedef enum { false, true } bool;
-void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
+#define SUNDIALS_DEBUG_PRINT(x) sundials_debug_print(cv_mem, x, SUNFALSE, 0, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_INT(x,y) sundials_debug_print(cv_mem, x, SUNFALSE, y, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_REAL(x,y) sundials_debug_print_real(cv_mem, x, SUNFALSE, y, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_FULL(x) sundials_debug_print(cv_mem, x, SUNTRUE, 0, __LINE__, __func__)
+void sundials_debug_print(CVodeMem cv_mem, const char *message, booleantype do_full,
     const int int_val, const int line, const char *func)
 {
   int i;
@@ -55,7 +54,7 @@ void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
          NV_DATA_S(cv_mem->cv_zn[0])[SUNDIALS_DEBUG_SPEC_],
          NV_DATA_S(cv_mem->cv_zn[1])[SUNDIALS_DEBUG_SPEC_],
          NV_DATA_S(cv_mem->cv_ftemp)[SUNDIALS_DEBUG_SPEC_]);
-  if (do_full) {
+  if (do_full==SUNTRUE) {
     for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
       printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
          i, NV_DATA_S(cv_mem->cv_y)[i],
@@ -67,7 +66,7 @@ void pmc_debug_print(CVodeMem cv_mem, const char *message, bool do_full,
     }
   }
 }
-void pmc_debug_print_real(CVodeMem cv_mem, const char *message, bool do_full,
+void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype do_full,
     const double real_val, const int line, const char *func)
 {
   int i;
@@ -80,7 +79,7 @@ void pmc_debug_print_real(CVodeMem cv_mem, const char *message, bool do_full,
          NV_DATA_S(cv_mem->cv_zn[0])[SUNDIALS_DEBUG_SPEC_],
          NV_DATA_S(cv_mem->cv_zn[1])[SUNDIALS_DEBUG_SPEC_],
          NV_DATA_S(cv_mem->cv_ftemp)[SUNDIALS_DEBUG_SPEC_]);
-  if (do_full) {
+  if (do_full==SUNTRUE) {
     for (i=0; i<NV_LENGTH_S(cv_mem->cv_y); i++) {
       printf("\n  y[%3d] = % -le zn[0][%3d] = % -le zn[1][%3d] = % -le ftemp[%3d] = % -le acor_init[%3d] = % -le acor[%3d] % -le",
          i, NV_DATA_S(cv_mem->cv_y)[i],

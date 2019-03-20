@@ -72,17 +72,17 @@ sunindextype GlobalVectorLength_KLU(N_Vector y);
  */
 
 #ifdef SUNDIALS_DEBUG
-#define SUNDIALS_DEBUG_PRINT(x) pmc_debug_print_sunlinsol(S, x, 0, __LINE__, __func__)
-#define SUNDIALS_DEBUG_PRINT_INT(x,y) pmc_debug_print_sunlinsol(S, x, y, __LINE__, __func__)
-void pmc_debug_print_sunlinsol(SUNLinearSolver S, const char *message, const int int_val,
+#define SUNDIALS_DEBUG_PRINT(x) sundials_debug_print_sunlinsol(S, x, 0, __LINE__, __func__)
+#define SUNDIALS_DEBUG_PRINT_INT(x,y) sundials_debug_print_sunlinsol(S, x, y, __LINE__, __func__)
+void sundials_debug_print_sunlinsol(SUNLinearSolver S, const char *message, const int int_val,
     const int line, const char *func)
 {
   if (DEBUG_OUT(S) == SUNFALSE) return;
   printf("\n[DEBUG] line %4d in sunlinsol_klu::%-20s(): %-25s %-4.0d", line,
          func, message, int_val);
 }
-#define SUNDIALS_DEBUG_PRINT_MATRIX(x,M) pmc_debug_print_matrix_sunlinsol(S, x, M, __LINE__, __func__)
-void pmc_debug_print_matrix_sunlinsol(SUNLinearSolver S, const char *message, SUNMatrix M,
+#define SUNDIALS_DEBUG_PRINT_MATRIX(x,M) sundials_debug_print_matrix_sunlinsol(S, x, M, __LINE__, __func__)
+void sundials_debug_print_matrix_sunlinsol(SUNLinearSolver S, const char *message, SUNMatrix M,
     const int line, const char *func)
 {
   int i, j, i_elem;
