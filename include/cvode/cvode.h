@@ -233,9 +233,9 @@ typedef void (*CVErrHandlerFn)(int error_code,
  * A function that attempts to improve on guesses for state y_n
  * sent to the linear solver.
  * The function guess_helper takes as input the current time t_n and
- * time step h_n, the current guess for y_n, and the change in y
- * from t_n-1 to t_n, hf. The corr vector should hold the calculated
- * corrections.
+ * time step h_n, the current guess for y_n, y at t(n-1), and the
+ * change in y from t_n-1 to t_n, hf. The corr vector should hold
+ * the calculated corrections.
  *
  * A CVDlsGuessHelperFn should return 1 if corrections were made or
  * 0 if not.
@@ -243,9 +243,9 @@ typedef void (*CVErrHandlerFn)(int error_code,
  */
 
 typedef int  (*CVDlsGuessHelperFn)(const realtype t_n, const realtype h_n,
-                                    N_Vector y_n, N_Vector hf,
-                                    void *user_data, N_Vector tmp1,
-                                    N_Vector corr);
+                                    N_Vector y_n, N_Vector y_n1,
+                                    N_Vector hf, void *user_data,
+                                    N_Vector tmp1, N_Vector corr);
 
 /*
  * =================================================================

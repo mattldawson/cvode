@@ -1647,8 +1647,19 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     return(SUNFALSE);
   }
 
+  cv_mem->cv_last_yn = N_VClone(tmpl);
+  if (cv_mem->cv_last_yn == NULL) {
+    N_VDestroy(cv_mem->cv_acor_init);
+    N_VDestroy(cv_mem->cv_tempv);
+    N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_ewt);
+    N_VDestroy(cv_mem->cv_acor);
+    return(SUNFALSE);
+  }
+
   cv_mem->cv_ftemp = N_VClone(tmpl);
   if (cv_mem->cv_ftemp == NULL) {
+    N_VDestroy(cv_mem->cv_last_yn);
     N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
@@ -1665,6 +1676,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
       N_VDestroy(cv_mem->cv_ewt);
       N_VDestroy(cv_mem->cv_acor);
       N_VDestroy(cv_mem->cv_acor_init);
+      N_VDestroy(cv_mem->cv_last_yn);
       N_VDestroy(cv_mem->cv_tempv);
       N_VDestroy(cv_mem->cv_tempv1);
       N_VDestroy(cv_mem->cv_ftemp);
@@ -1700,6 +1712,7 @@ static void cvFreeVectors(CVodeMem cv_mem)
   N_VDestroy(cv_mem->cv_tempv);
   N_VDestroy(cv_mem->cv_tempv1);
   N_VDestroy(cv_mem->cv_acor_init);
+  N_VDestroy(cv_mem->cv_last_yn);
   N_VDestroy(cv_mem->cv_ftemp);
   for (j=0; j <= maxord; j++) N_VDestroy(cv_mem->cv_zn[j]);
 
@@ -2293,6 +2306,7 @@ static void cvPredict(CVodeMem cv_mem)
     if ((cv_mem->cv_tn - cv_mem->cv_tstop)*cv_mem->cv_h > ZERO)
       cv_mem->cv_tn = cv_mem->cv_tstop;
   }
+  N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_last_yn);
   for (k = 1; k <= cv_mem->cv_q; k++)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
@@ -2710,8 +2724,8 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
     N_VScale(cv_mem->cv_rl1, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
     cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
-                     cv_mem->cv_ftemp, cv_mem->cv_user_data, cv_mem->cv_tempv,
-                     cv_mem->cv_acor_init);
+                     cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
+                     cv_mem->cv_tempv, cv_mem->cv_acor_init);
     SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
   }
 
@@ -2964,6 +2978,7 @@ static void cvRestore(CVodeMem cv_mem, realtype saved_t)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
+  N_VScale(ONE, cv_mem->cv_last_yn, cv_mem->cv_zn[0]);
 }
 
 /*
