@@ -1153,6 +1153,17 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
     SUNDIALS_DEBUG_PRINT("After initial scaling of zn[1] by h0");
 
+    /* Try to improve initial guess of zn[1] */
+
+    if (cv_mem->cv_ghfun) {
+      SUNDIALS_DEBUG_PRINT("Calling guess helper");
+      N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_zn[1], cv_mem->cv_tempv1);
+      cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_tempv1,
+                       cv_mem->cv_zn[0], cv_mem->cv_zn[1], cv_mem->cv_user_data,
+                       cv_mem->cv_tempv, cv_mem->cv_acor_init);
+      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
+    }
+
     /* Check for zeros of root function g at and near t0. */
 
     if (cv_mem->cv_nrtfn > 0) {
