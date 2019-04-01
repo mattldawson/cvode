@@ -3036,6 +3036,9 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
 
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
 
+  SUNDIALS_DEBUG_PRINT_REAL("Evaluating dsm", dsm);
+  SUNDIALS_DEBUG_PRINT_REAL("Evaluating minimum predicted conc", min_val);
+
   /* If est. local error norm dsm passes test and there are no negative values,
    * return CV_SUCCESS */
   *dsmPtr = dsm;
