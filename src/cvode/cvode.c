@@ -2808,6 +2808,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 {
   int m, retval;
   realtype del, delp, dcon;
+  realtype min_val;
   N_Vector b;
 
   cv_mem->cv_mnewt = m = 0;
@@ -2860,7 +2861,10 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
     SUNDIALS_DEBUG_PRINT_REAL("Got dcon", dcon);
 
-    if (dcon <= ONE) {
+    N_VLinearSum(cv_mem->cv_l[0], cv_mem->cv_acor, ONE, cv_mem->cv_zn[0],
+                 cv_mem->cv_tempv1);
+    min_val = N_VMin(cv_mem->cv_tempv1);
+    if (dcon <= ONE && min_val > -PMC_TINY) {
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
       cv_mem->cv_jcur = SUNFALSE;
       return(CV_SUCCESS); /* Nonlinear system was solved successfully */
@@ -2878,6 +2882,18 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         SUNDIALS_DEBUG_PRINT_INT("Divergence or maxcor reached", m);
         return(CONV_FAIL);
       }
+    }
+
+    /* Call a user-supplied function to improve guesses for zn(0), if one exists */
+    N_VConst(ZERO, cv_mem->cv_acor);
+    if (cv_mem->cv_ghfun) {
+      SUNDIALS_DEBUG_PRINT("Calling guess helper");
+      N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_ftemp);
+      if(cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_y,
+                          cv_mem->cv_zn[0], cv_mem->cv_ftemp, cv_mem->cv_user_data,
+                          cv_mem->cv_tempv1, cv_mem->cv_acor) == 1)
+        N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
+      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
     }
 
     /* Save norm of correction, evaluate f, and loop again */
