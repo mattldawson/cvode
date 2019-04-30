@@ -2845,6 +2845,16 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         return(CONV_FAIL);
     }
 
+    /* Call a user-supplied function to improve guesses for zn(0), if one exists */
+    if (cv_mem->cv_ghfun) {
+      SUNDIALS_DEBUG_PRINT("Calling guess helper");
+      N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
+      if(cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
+                          cv_mem->cv_y, b, cv_mem->cv_user_data,
+                          cv_mem->cv_tempv, cv_mem->cv_tempv1) == 1)
+      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
+    }
+
     /* Get WRMS norm of correction; add correction to acor and y */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
     SUNDIALS_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
@@ -2882,18 +2892,6 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         SUNDIALS_DEBUG_PRINT_INT("Divergence or maxcor reached", m);
         return(CONV_FAIL);
       }
-    }
-
-    /* Call a user-supplied function to improve guesses for zn(0), if one exists */
-    N_VConst(ZERO, cv_mem->cv_acor);
-    if (cv_mem->cv_ghfun) {
-      SUNDIALS_DEBUG_PRINT("Calling guess helper");
-      N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_ftemp);
-      if(cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_y,
-                          cv_mem->cv_zn[0], cv_mem->cv_ftemp, cv_mem->cv_user_data,
-                          cv_mem->cv_tempv1, cv_mem->cv_acor) == 1)
-        N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
-      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
     }
 
     /* Save norm of correction, evaluate f, and loop again */
