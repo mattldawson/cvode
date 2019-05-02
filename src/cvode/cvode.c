@@ -2733,7 +2733,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
-    N_VScale(cv_mem->cv_rl1, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
+    N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                      cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
                      cv_mem->cv_tempv, cv_mem->cv_acor_init);
