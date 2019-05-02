@@ -2808,7 +2808,6 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 {
   int m, retval;
   realtype del, delp, dcon;
-  realtype min_val;
   N_Vector b;
 
   cv_mem->cv_mnewt = m = 0;
@@ -2845,15 +2844,9 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         return(CONV_FAIL);
     }
 
-    /* Call a user-supplied function to improve guesses for zn(0), if one exists */
-    if (cv_mem->cv_ghfun) {
-      SUNDIALS_DEBUG_PRINT("Calling guess helper");
-      N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
-      if(cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
-                          cv_mem->cv_y, b, cv_mem->cv_user_data,
-                          cv_mem->cv_tempv, cv_mem->cv_tempv1) == 1)
-      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
-    }
+    /* Check for negative concentrations */
+    N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
+    if (N_VMin(cv_mem->cv_ftemp) < -PMC_TINY) return(CONV_FAIL);
 
     /* Get WRMS norm of correction; add correction to acor and y */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
@@ -2871,10 +2864,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
     SUNDIALS_DEBUG_PRINT_REAL("Got dcon", dcon);
 
-    N_VLinearSum(cv_mem->cv_l[0], cv_mem->cv_acor, ONE, cv_mem->cv_zn[0],
-                 cv_mem->cv_tempv1);
-    min_val = N_VMin(cv_mem->cv_tempv1);
-    if (dcon <= ONE && min_val > -PMC_TINY) {
+    if (dcon <= ONE) {
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
       cv_mem->cv_jcur = SUNFALSE;
       return(CV_SUCCESS); /* Nonlinear system was solved successfully */
