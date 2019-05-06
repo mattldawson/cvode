@@ -1079,6 +1079,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
     cv_mem->cv_tretlast = *tret = cv_mem->cv_tn;
 
+#ifdef SUNDIALS_DEBUG
+    // Initialize correction arrays to zero for easier comparison
+    // of debug output
+    N_VConst(ZERO, cv_mem->cv_acor);
+    N_VConst(ZERO, cv_mem->cv_acor_init);
+#endif
+
     ier = cvInitialSetup(cv_mem);
     if (ier!= CV_SUCCESS) return(ier);
 
