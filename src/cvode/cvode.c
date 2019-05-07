@@ -1167,7 +1167,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
       N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_zn[1], cv_mem->cv_tempv1);
       cv_mem->cv_ghfun(cv_mem->cv_tn + cv_mem->cv_h, cv_mem->cv_h, cv_mem->cv_tempv1,
                        cv_mem->cv_zn[0], cv_mem->cv_zn[1], cv_mem->cv_user_data,
-                       cv_mem->cv_tempv, cv_mem->cv_acor_init);
+                       cv_mem->cv_tempv2, cv_mem->cv_acor_init);
       SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
     }
 
@@ -1656,10 +1656,20 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     return(SUNFALSE);
   }
 
+  cv_mem->cv_tempv2 = N_VClone(tmpl);
+  if (cv_mem->cv_tempv2 == NULL) {
+    N_VDestroy(cv_mem->cv_tempv);
+    N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_ewt);
+    N_VDestroy(cv_mem->cv_acor);
+    return(SUNFALSE);
+  }
+
   cv_mem->cv_acor_init = N_VClone(tmpl);
   if (cv_mem->cv_acor_init == NULL) {
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1670,6 +1680,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1681,6 +1692,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1697,6 +1709,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
       N_VDestroy(cv_mem->cv_last_yn);
       N_VDestroy(cv_mem->cv_tempv);
       N_VDestroy(cv_mem->cv_tempv1);
+      N_VDestroy(cv_mem->cv_tempv2);
       N_VDestroy(cv_mem->cv_ftemp);
       for (i=0; i < j; i++) N_VDestroy(cv_mem->cv_zn[i]);
       return(SUNFALSE);
@@ -1729,6 +1742,7 @@ static void cvFreeVectors(CVodeMem cv_mem)
   N_VDestroy(cv_mem->cv_acor);
   N_VDestroy(cv_mem->cv_tempv);
   N_VDestroy(cv_mem->cv_tempv1);
+  N_VDestroy(cv_mem->cv_tempv2);
   N_VDestroy(cv_mem->cv_acor_init);
   N_VDestroy(cv_mem->cv_last_yn);
   N_VDestroy(cv_mem->cv_ftemp);
@@ -2743,7 +2757,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                      cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
-                     cv_mem->cv_tempv, cv_mem->cv_acor_init);
+                     cv_mem->cv_tempv1, cv_mem->cv_acor_init);
     SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
   }
 
@@ -2851,12 +2865,28 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         return(CONV_FAIL);
     }
 
+    /* Get WRMS norm of correction */
+    del = N_VWrmsNorm(b, cv_mem->cv_ewt);
+
+    /* Call a user-supplied function to improve guesses for zn(0), if one exists */
+    if (cv_mem->cv_ghfun) {
+      SUNDIALS_DEBUG_PRINT("Calling guess helper");
+      N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
+      if(cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
+                          cv_mem->cv_y, b, cv_mem->cv_user_data,
+                          cv_mem->cv_tempv1, cv_mem->cv_tempv2)==1) {
+        SUNDIALS_DEBUG_PRINT_FULL("Received updated adjustment from guess helper");
+      }
+    }
+
     /* Check for negative concentrations */
     N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
-    if (N_VMin(cv_mem->cv_ftemp) < -PMC_TINY) return(CONV_FAIL);
+    if (N_VMin(cv_mem->cv_ftemp) < -PMC_TINY) {
+      SUNDIALS_DEBUG_PRINT_FULL("Negative concentration from adjustment");
+      return(CONV_FAIL);
+    }
 
-    /* Get WRMS norm of correction; add correction to acor and y */
-    del = N_VWrmsNorm(b, cv_mem->cv_ewt);
+    /* Add correction to acor and y */
     SUNDIALS_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
     N_VLinearSum(ONE, cv_mem->cv_acor, ONE, b, cv_mem->cv_acor);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
