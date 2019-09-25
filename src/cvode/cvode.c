@@ -1161,7 +1161,6 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     SUNDIALS_DEBUG_PRINT("After initial scaling of zn[1] by h0");
 
     /* Try to improve initial guess of zn[1] */
-
     if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_zn[1], cv_mem->cv_tempv1);
@@ -2755,10 +2754,11 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
-    cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
-                     cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
-                     cv_mem->cv_tempv1, cv_mem->cv_acor_init);
+    retval = cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
+                         cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
+                         cv_mem->cv_tempv1, cv_mem->cv_acor_init);
     SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
+    if (retval<0) return(RHSFUNC_RECVR);
   }
 
   /* Looping point for the solution of the nonlinear system.
@@ -2872,10 +2872,16 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
-      if(cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
-                          cv_mem->cv_y, b, cv_mem->cv_user_data,
-                          cv_mem->cv_tempv1, cv_mem->cv_tempv2)==1) {
+      retval = cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
+                                cv_mem->cv_y, b, cv_mem->cv_user_data,
+                                cv_mem->cv_tempv1, cv_mem->cv_tempv2);
+      if (retval==1) {
         SUNDIALS_DEBUG_PRINT_FULL("Received updated adjustment from guess helper");
+      } else if (retval<0) {
+        if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup))
+          return(TRY_AGAIN);
+        else
+          return(RHSFUNC_RECVR);
       }
     }
 

@@ -241,7 +241,8 @@ typedef void (*CVErrHandlerFn)(int error_code,
  * y_n1 is the pre-adjusted state, and y_n is the adjusted state.
  *
  * A CVDlsGuessHelperFn should return 1 if corrections were made or
- * 0 if not.
+ * 0 if not. A negative return value is used to signal that a
+ * correction was attempted but not applied.
  * -----------------------------------------------------------------
  */
 
