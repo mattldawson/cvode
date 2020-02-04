@@ -1646,6 +1646,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_tempv);
 
   cv_mem->cv_tempv1 = N_VClone(tmpl);
   if (cv_mem->cv_tempv1 == NULL) {
@@ -1654,6 +1655,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_tempv1);
 
   cv_mem->cv_tempv2 = N_VClone(tmpl);
   if (cv_mem->cv_tempv2 == NULL) {
@@ -1663,6 +1665,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_tempv2);
 
   cv_mem->cv_acor_init = N_VClone(tmpl);
   if (cv_mem->cv_acor_init == NULL) {
