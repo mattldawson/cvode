@@ -213,7 +213,7 @@ typedef struct CVodeMemRec {
 
   /* Linear Solver specific memory */
 
-  void *cv_lmem;           
+  void *cv_lmem;
 
   /*------------
     Saved Values
@@ -276,6 +276,7 @@ typedef struct CVodeMemRec {
   long int cv_nge;         /* counter for g evaluations                       */
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
+
 
 
 } *CVodeMem;

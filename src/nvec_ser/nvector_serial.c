@@ -687,7 +687,7 @@ realtype N_VWrmsNorm_Serial(N_Vector x, N_Vector w)
 
   for (i = 0; i < N; i++) {
     prodi = xd[i]*wd[i];
-    sum += SUNSQR(prodi);
+    sum += SUNSQR(prodi);//A²
   }
 
   return(SUNRsqrt(sum/N));

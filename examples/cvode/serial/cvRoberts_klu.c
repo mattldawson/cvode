@@ -163,17 +163,17 @@ int main()
 
   /* In loop, call CVode, print results, and test for error.
      Break out of loop when NOUT preset output times have been reached.  */
-  printf(" \n3-species kinetics problem\n\n");
+  //printf(" \n3-species kinetics problem\n\n");
 
   iout = 0;  tout = T1;
   while(1) {
     flag = CVode(cvode_mem, tout, y, &t, CV_NORMAL);
-    PrintOutput(t, Ith(y,1), Ith(y,2), Ith(y,3));
+    //PrintOutput(t, Ith(y,1), Ith(y,2), Ith(y,3));
 
     if (flag == CV_ROOT_RETURN) {
       flagr = CVodeGetRootInfo(cvode_mem, rootsfound);
       if (check_flag(&flagr, "CVodeGetRootInfo", 1)) return(1);
-      PrintRootInfo(rootsfound[0],rootsfound[1]);
+      //PrintRootInfo(rootsfound[0],rootsfound[1]);
     }
 
     if (check_flag(&flag, "CVode", 1)) break;
@@ -186,7 +186,7 @@ int main()
   }
 
   /* Print some final statistics */
-  PrintFinalStats(cvode_mem);
+//  PrintFinalStats(cvode_mem);
 
   /* Free y and abstol vectors */
   N_VDestroy(y);

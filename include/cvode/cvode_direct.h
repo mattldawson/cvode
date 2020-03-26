@@ -27,6 +27,8 @@
 #include <sundials/sundials_matrix.h>
 #include <sundials/sundials_linearsolver.h>
 #include <sundials/sundials_nvector.h>
+//#include <cuda.h>
+//#include <cuda_runtime.h>
 
 #ifdef __cplusplus  /* wrapper to enable C++ usage */
 extern "C" {

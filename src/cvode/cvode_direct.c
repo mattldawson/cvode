@@ -31,10 +31,16 @@
 
 #include "cvode_impl.h"
 #include "cvode_direct_impl.h"
+//#include "cvode_gpu.h"
 #include <sundials/sundials_math.h>
 #include <sunmatrix/sunmatrix_band.h>
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+//#include "cvode_impl.h"
 
 /*=================================================================
   FUNCTION SPECIFIC CONSTANTS
@@ -46,6 +52,27 @@
 #define ZERO         RCONST(0.0)
 #define ONE          RCONST(1.0)
 #define TWO          RCONST(2.0)
+
+
+//DEBUG TIMINGS *cguzman
+
+#include <time.h>
+
+int counter8=0;
+int counter9=0;
+//int counter10=0;
+int counter11=0;
+int counter12=0;
+int counter13=0;
+int counter14=0;
+double timeSUNRabs=0;
+double timeSUNMatZero=0;
+double timeSUNMatCopy=0;
+double timeSUNMatScaleAddI=0;
+double timeSUNLinSolSetup=0;
+double timeSUNLinSolSolve=0;
+double timeSUNJac=0;
+
 
 /*=================================================================
   EXPORTED FUNCTIONS -- REQUIRED
@@ -645,6 +672,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
  
   /* If jok = SUNTRUE, use saved copy of J */
   if (jok) {
+    //if (0) {
     *jcurPtr = SUNFALSE;
     retval = SUNMatCopy(cvdls_mem->savedJ, cvdls_mem->A);
     if (retval) {
@@ -667,10 +695,22 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
       return(-1);
     }
 
+    //clock_t start5 = clock();
+
+    //not working cvdls_mem->J_data->gamma = cv_mem->cv_gamma;
     retval = cvdls_mem->jac(cv_mem->cv_tn, ypred, 
                             fpred, cvdls_mem->A, 
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
-    if (retval < 0) {
+  /*
+  clock_t end5 = clock();
+  timeSUNJac+= ((double) (end5 - start5)) / CLOCKS_PER_SEC;
+  counter14++;
+  if (counter14>1){ //22099 20299
+    printf ("Counter SUNJac: %d\n", counter14);
+    printf ("Total Time SUNJac= %f\n",timeSUNJac);
+  }*/
+
+   if (retval < 0) {
       cvProcessError(cv_mem, CVDLS_JACFUNC_UNRECVR, "CVDLS", 
                       "cvDlsSetup",  MSGD_JACFUNC_FAILED);
       cvdls_mem->last_flag = CVDLS_JACFUNC_UNRECVR;
@@ -690,20 +730,54 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
     }
 
   }
-  
-  /* Scale and add I to get A = I - gamma*J */
+
+
+//  clock_t start3 = clock();
+
+  //retval = matscaleaddi_gpu(-cv_mem->cv_gamma, cvdls_mem->A, cv_mem);
+  //good, 0.01 CB05_10000 (only passing jac_gpu, with passing the jac indices was 0.03, so its important to reduce data mov)
+
+  // Scale and add I to get A = I - gamma*J //
   retval = SUNMatScaleAddI(-cv_mem->cv_gamma, cvdls_mem->A);
+  //0.02 CB05_10000
+
+//retval = 0;
+
+/*  clock_t end3 = clock();
+  timeSUNMatScaleAddI+= ((double) (end3 - start3)) / CLOCKS_PER_SEC;
+  counter11++;
+  if (counter11>0){ //22099 20299
+    printf ("Counter SUNMatScaleAddI: %d\n", counter11);
+    printf ("Total Time SUNMatScaleAddI= %f\n",timeSUNMatScaleAddI);
+  }
+*/
   if (retval) {
-    cvProcessError(cv_mem, CVDLS_SUNMAT_FAIL, "CVDLS", 
+    cvProcessError(cv_mem, CVDLS_SUNMAT_FAIL, "CVDLS",
                    "cvDlsSetup",  MSGD_MATSCALEADDI_FAILED);
     cvdls_mem->last_flag = CVDLS_SUNMAT_FAIL;
     return(-1);
   }
 
-  /* Call generic linear solver 'setup' with this system matrix, and
-     return success/failure flag */
+  //clock_t start4 = clock();
+
+  // Call generic linear solver 'setup' with this system matrix, and
+  //  return success/failure flag
+  //cvdls_mem->last_flag = linsolsetup_gpu(cv_mem);
+  //Take so much time when matscaleaddi_gpu (check if fixed)
+
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
-  return(cvdls_mem->last_flag);
+
+  /*clock_t end4 = clock();
+
+  timeSUNLinSolSetup+= ((double) (end4 - start4)) / CLOCKS_PER_SEC;
+  counter12++;
+  if (counter12>1){//22099 20299
+    printf ("Counter SUNLinSolSetup: %d\n", counter12);
+    printf ("Total Time SUNLinSolSetup= %f\n",timeSUNLinSolSetup);
+  }
+*/
+
+return(cvdls_mem->last_flag);
 }
 
 
@@ -733,15 +807,34 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
-  /* call the generic linear system solver, and copy b to x */
+  //clock_t start4 = clock();
+
+  //N_Vector x = cvdls_mem->x;
+  //double del=0;
+  //retval = linsolsolve_gpu(&del, cvdls_mem->A, cv_mem, NV_DATA_S(x), NV_DATA_S(b));
+  //CB05_1000 0.53 CB05_10000 3.15 mock_10000 3.03 mock_10000_e-9accuracy 1.83s
+
+  // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
+  //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
+
+  //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
-  
-  /* scale the correction to account for change in gamma */
+/*
+ counter13++;
+ clock_t end4 = clock();
+
+  timeSUNLinSolSolve+= ((double) (end4 - start4)) / CLOCKS_PER_SEC;
+  if (counter13>0){//24199 20300
+    printf ("Counter SUNLinSolSolve: %d\n", counter13);
+    //printf ("Total Time SUNLinSolSolve= %f\n",timeSUNLinSolSolve);
+  }
+*/
+  //scale the correction to account for change in gamma
   if ((cv_mem->cv_lmm == CV_BDF) && (cv_mem->cv_gamrat != ONE))
     N_VScale(TWO/(ONE + cv_mem->cv_gamrat), b, b);
-  
-  /* store solver return value and return */
+
+  // store solver return value and return
   cvdls_mem->last_flag = retval;
   return(retval);
 }
@@ -750,7 +843,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 /*-----------------------------------------------------------------
   cvDlsFree
   -----------------------------------------------------------------
-  This routine frees memory associates with the CVDls solver 
+  This routine frees memory associates with the CVDls solver
   interface.
   -----------------------------------------------------------------*/
 int cvDlsFree(CVodeMem cv_mem)

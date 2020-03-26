@@ -105,7 +105,6 @@ typedef struct CVodeMemRec {
   N_Vector cv_last_yn; /* last solved value for y_n                           */
   N_Vector cv_tempv;   /* temporary storage vector                            */
   N_Vector cv_tempv1;  /* temporary storage vector                            */
-  N_Vector cv_tempv2;  /* temporary storage vector                            */
   N_Vector cv_ftemp;   /* temporary storage vector                            */
 
   /*-----------------
@@ -278,6 +277,16 @@ typedef struct CVodeMemRec {
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
+  /*----------------
+  GPU Data
+  ----------------*/
+
+  void* bicg; //itsolver class (in C doesn't exist classes)
+  realtype *aux_jac_data_gpu;
+
+  //sunindextype *indexvals_gpu;
+  //sunindextype *indexptrs_gpu;
+  //realtype *jac_data_gpu;
 
 } *CVodeMem;
 
