@@ -32,13 +32,9 @@
 #include <string.h>
 
 #include "cvode_impl.h"
-//#include "cvode_gpu.h"
 #include <sundials/sundials_math.h>
 #include <sundials/sundials_types.h>
 #include <nvector/nvector_serial.h>
-
-//#include "cvode_gpu.h"
-
 #ifdef SUNDIALS_DEBUG
 #define SUNDIALS_DEBUG_PRINT(x) sundials_debug_print(cv_mem, x, SUNFALSE, 0, __LINE__, __func__)
 #define SUNDIALS_DEBUG_PRINT_INT(x,y) sundials_debug_print(cv_mem, x, SUNFALSE, y, __LINE__, __func__)

@@ -31,7 +31,6 @@
 
 #include "cvode_impl.h"
 #include "cvode_direct_impl.h"
-//#include "cvode_gpu.h"
 #include <sundials/sundials_math.h>
 #include <sunmatrix/sunmatrix_band.h>
 #include <sunmatrix/sunmatrix_dense.h>
@@ -39,8 +38,6 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
-//#include "cvode_impl.h"
 
 /*=================================================================
   FUNCTION SPECIFIC CONSTANTS
@@ -52,7 +49,6 @@
 #define ZERO         RCONST(0.0)
 #define ONE          RCONST(1.0)
 #define TWO          RCONST(2.0)
-
 
 //DEBUG TIMINGS *cguzman
 
