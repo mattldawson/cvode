@@ -36,9 +36,6 @@
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 
-#include <cuda.h>
-#include <cuda_runtime.h>
-
 /*=================================================================
   FUNCTION SPECIFIC CONSTANTS
   =================================================================*/

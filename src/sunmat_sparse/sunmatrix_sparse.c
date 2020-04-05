@@ -670,7 +670,7 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
   /*   case 3: A must be reallocated with sufficient storage */
   } else {
 
-	printf("case 3\n");
+	printf("WARNING: Triggering KLU case 3\n");
 
     /* create work arrays for nonzero indices and values */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));
@@ -726,7 +726,6 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
         }
       }
     }
-
 
     /* indicate end of data */
     Cp[N] = nz;

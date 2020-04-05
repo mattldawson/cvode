@@ -278,7 +278,6 @@ typedef struct CVodeMemRec {
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
 
-
 } *CVodeMem;
 
 /*

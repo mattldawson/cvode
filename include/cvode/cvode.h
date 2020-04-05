@@ -34,8 +34,6 @@
 #define _CVODE_H
 
 #include <stdio.h>
-//#include <cuda.h>
-//#include <cuda_runtime.h>
 #include <sundials/sundials_nvector.h>
 
 #ifdef __cplusplus  /* wrapper to enable C++ usage */
@@ -237,10 +235,14 @@ typedef void (*CVErrHandlerFn)(int error_code,
  * The function guess_helper takes as input the current time t_n and
  * time step h_n, the current guess for y_n, y at t(n-1), and the
  * change in y from t_n-1 to t_n, hf. The corr vector should hold
- * the calculated corrections.
+ * the calculated corrections. The vector hf should be updated to
+ * include the corrections. If h_n is 0, the vector hf contains
+ * adjustments to the state y_n such that y_n = y_n1 + hf. Here,
+ * y_n1 is the pre-adjusted state, and y_n is the adjusted state.
  *
  * A CVDlsGuessHelperFn should return 1 if corrections were made or
- * 0 if not.
+ * 0 if not. A negative return value is used to signal that a
+ * correction was attempted but not applied.
  * -----------------------------------------------------------------
  */
 

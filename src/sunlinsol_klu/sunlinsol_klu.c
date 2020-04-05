@@ -60,7 +60,7 @@ sunindextype GlobalVectorLength_KLU(N_Vector y);
  */
 
 #if defined(SUNDIALS_INT64_T)
-weefine KLU_INDEXTYPE long int
+#define KLU_INDEXTYPE long int
 #else
 #define KLU_INDEXTYPE int
 #endif
