@@ -298,14 +298,14 @@ void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype
 
 #include <time.h>
 
-int counter4=0;
+/*int counter4=0;
 int counter5=0;
 int counter6=0;
 int counter7=0;
 double timeNewtonIt=0;
 double timecvStep=0;
 double timeNewton=0;
-double timeNoNewtonIt=0;
+double timeNoNewtonIt=0;*/
 
 /*=================================================================*/
 /*             Private Helper Functions Prototypes                 */

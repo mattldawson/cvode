@@ -51,7 +51,7 @@
 
 #include <time.h>
 
-int counter8=0;
+/*int counter8=0;
 int counter9=0;
 //int counter10=0;
 int counter11=0;
@@ -65,7 +65,7 @@ double timeSUNMatScaleAddI=0;
 double timeSUNLinSolSetup=0;
 double timeSUNLinSolSolve=0;
 double timeSUNJac=0;
-
+*/
 
 /*=================================================================
   EXPORTED FUNCTIONS -- REQUIRED
