@@ -107,7 +107,7 @@ typedef long double realtype;
  *------------------------------------------------------------------
  */
 
-/*
+
 #if defined(SUNDIALS_INT64_T)
 
 #if __STDC_VERSION__ >= 199901L
@@ -127,9 +127,9 @@ typedef int sunindextype;
 #endif
 
 #endif
- */
+/*
 typedef int sunindextype;
-
+*/
 
 /*
  *------------------------------------------------------------------
