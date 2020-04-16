@@ -592,7 +592,7 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->cv_irfnd   = 0;
 
 //Profiling
-#ifndef PMC_PROFILING
+#ifdef PMC_PROFILING
   cv_mem->counterNewtonIt=0;
   cv_mem->counterLinSolSetup=0;
   cv_mem->counterLinSolSolve=0;
@@ -1408,13 +1408,16 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
         cvProcessError(cv_mem, CV_WARNING, "CVODE", "CVode", MSGCV_HNIL_DONE);
     }
 
+#ifdef PMC_PROFILING
     clock_t startcvStep=clock();
-
+#endif
     /* Call cvStep to take a step */
     kflag = cvStep(cv_mem);
 
+#ifdef PMC_PROFILING
     cv_mem->timecvStep+= clock() - startcvStep;
     cv_mem->countercvStep++;
+#endif
 
     /* Process failed step cases, and exit loop */
     if (kflag != CV_SUCCESS) {
@@ -2649,8 +2652,9 @@ static int cvNls(CVodeMem cv_mem, int nflag)
 {
   int flag = CV_SUCCESS;
 
+#ifdef PMC_PROFILING
   clock_t startNewtonIt=clock();
-
+#endif
   switch(cv_mem->cv_iter) {
   case CV_FUNCTIONAL:
     flag = cvNlsFunctional(cv_mem);
@@ -2660,8 +2664,10 @@ static int cvNls(CVodeMem cv_mem, int nflag)
     break;
   }
 
+#ifdef PMC_PROFILING
   cv_mem->timeNewtonIt+= clock() - startNewtonIt;
   cv_mem->counterNewtonIt++;
+#endif
 
   return(flag);
 }
@@ -2834,11 +2840,16 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
+#ifdef PMC_PROFILING
     clock_t startDerivNewton=clock();
+#endif
+
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+#ifdef PMC_PROFILING
     cv_mem->timeDerivNewton+= clock() - startDerivNewton;
     cv_mem->counterDerivNewton++;
+#endif
 
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
@@ -2849,7 +2860,9 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
 
+#ifdef PMC_PROFILING
       clock_t startLinSolSetup=clock();
+#endif
 
 	    ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
@@ -2857,8 +2870,10 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
       //ier = linsolsetup_gpu(cv_mem, convfail, vtemp1, vtemp2, vtemp3);
 
+#ifdef PMC_PROFILING
       cv_mem->timeLinSolSetup+= clock() - startLinSolSetup;
       cv_mem->counterLinSolSetup++;
+#endif
 
 //SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
       cv_mem->cv_nsetups++;
@@ -2876,10 +2891,16 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     /* Do the Newton iteration */
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
 
+#ifdef PMC_PROFILING
     clock_t startLinSolSolve=clock();
+#endif
+
     ier = cvNewtonIteration(cv_mem);
+
+#ifdef PMC_PROFILING
     cv_mem->timeLinSolSolve+= clock() - startLinSolSolve;
     cv_mem->counterLinSolSolve++;
+#endif
 
     SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
     /* If there is a convergence failure and the Jacobian-related
@@ -3014,11 +3035,16 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
+#ifdef PMC_PROFILING
     clock_t startDerivSolve=clock();
+#endif
+
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+#ifdef PMC_PROFILING
     cv_mem->timeDerivSolve+= clock() - startDerivSolve;
     cv_mem->counterDerivSolve++;
+#endif
 
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);

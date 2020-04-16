@@ -126,6 +126,15 @@ INCLUDE(SundialsDeprecated)
 OPTION(SUNDIALS_DEBUG "Include debugging functions" OFF)
 
 # ---------------------------------------------------------------
+# Profiling functions?
+# ---------------------------------------------------------------
+
+OPTION(PMC_PROFILING "Include debugging functions" OFF)
+IF(PMC_PROFILING)
+  ADD_DEFINITIONS(-DPMC_PROFILING)
+ENDIF(PMC_PROFILING)
+
+# ---------------------------------------------------------------
 # Which modules to build?
 # ---------------------------------------------------------------
 

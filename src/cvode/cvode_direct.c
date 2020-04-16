@@ -51,22 +51,6 @@
 
 #include <time.h>
 
-/*int counter8=0;
-int counter9=0;
-//int counter10=0;
-int counter11=0;
-int counter12=0;
-int counter13=0;
-int counter14=0;
-double timeSUNRabs=0;
-double timeSUNMatZero=0;
-double timeSUNMatCopy=0;
-double timeSUNMatScaleAddI=0;
-double timeSUNLinSolSetup=0;
-double timeSUNLinSolSolve=0;
-double timeSUNJac=0;
-*/
-
 /*=================================================================
   EXPORTED FUNCTIONS -- REQUIRED
   =================================================================*/
@@ -688,15 +672,18 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
       return(-1);
     }
 
+#ifdef PMC_PROFILING
     clock_t startJac=clock();
+#endif
 
     //not working cvdls_mem->J_data->gamma = cv_mem->cv_gamma;
     retval = cvdls_mem->jac(cv_mem->cv_tn, ypred, 
                             fpred, cvdls_mem->A, 
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
-
+#ifdef PMC_PROFILING
     cv_mem->timeJac+= clock() - startJac;
     cv_mem->counterJac++;
+#endif
 
    if (retval < 0) {
       cvProcessError(cv_mem, CVDLS_JACFUNC_UNRECVR, "CVDLS", 
@@ -719,9 +706,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   }
 
-
-//  clock_t start3 = clock();
-
   //retval = matscaleaddi_gpu(-cv_mem->cv_gamma, cvdls_mem->A, cv_mem);
   //good, 0.01 CB05_10000 (only passing jac_gpu, with passing the jac indices was 0.03, so its important to reduce data mov)
 
@@ -731,14 +715,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
 //retval = 0;
 
-/*  clock_t end3 = clock();
-  timeSUNMatScaleAddI+= ((double) (end3 - start3)) / CLOCKS_PER_SEC;
-  counter11++;
-  if (counter11>0){ //22099 20299
-    printf ("Counter SUNMatScaleAddI: %d\n", counter11);
-    printf ("Total Time SUNMatScaleAddI= %f\n",timeSUNMatScaleAddI);
-  }
-*/
+
   if (retval) {
     cvProcessError(cv_mem, CVDLS_SUNMAT_FAIL, "CVDLS",
                    "cvDlsSetup",  MSGD_MATSCALEADDI_FAILED);
@@ -795,27 +772,21 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //retval = linsolsolve_gpu(&del, cvdls_mem->A, cv_mem, NV_DATA_S(x), NV_DATA_S(b));
   //CB05_1000 0.53 CB05_10000 3.15 mock_10000 3.03 mock_10000_e-9accuracy 1.83s
 
+#ifdef PMC_PROFILING
   clock_t startKLUSparse=clock();
+#endif
 
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
   //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
 
+#ifdef PMC_PROFILING
   cv_mem->timeKLUSparse+= clock() - startKLUSparse;
   cv_mem->counterKLUSparse++;
+#endif
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
-/*
- counter13++;
- clock_t end4 = clock();
-
-  timeSUNLinSolSolve+= ((double) (end4 - start4)) / CLOCKS_PER_SEC;
-  if (counter13>0){//24199 20300
-    printf ("Counter SUNLinSolSolve: %d\n", counter13);
-    //printf ("Total Time SUNLinSolSolve= %f\n",timeSUNLinSolSolve);
-  }
-*/
   //scale the correction to account for change in gamma
   if ((cv_mem->cv_lmm == CV_BDF) && (cv_mem->cv_gamrat != ONE))
     N_VScale(TWO/(ONE + cv_mem->cv_gamrat), b, b);

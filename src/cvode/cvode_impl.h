@@ -278,7 +278,7 @@ typedef struct CVodeMemRec {
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
-#ifndef PMC_PROFILING
+#ifdef PMC_PROFILING
   int counterNewtonIt;
   int counterLinSolSetup;
   int counterLinSolSolve;
