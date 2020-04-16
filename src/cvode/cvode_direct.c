@@ -688,20 +688,15 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
       return(-1);
     }
 
-    //clock_t start5 = clock();
+    clock_t startJac=clock();
 
     //not working cvdls_mem->J_data->gamma = cv_mem->cv_gamma;
     retval = cvdls_mem->jac(cv_mem->cv_tn, ypred, 
                             fpred, cvdls_mem->A, 
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
-  /*
-  clock_t end5 = clock();
-  timeSUNJac+= ((double) (end5 - start5)) / CLOCKS_PER_SEC;
-  counter14++;
-  if (counter14>1){ //22099 20299
-    printf ("Counter SUNJac: %d\n", counter14);
-    printf ("Total Time SUNJac= %f\n",timeSUNJac);
-  }*/
+
+    cv_mem->timeJac+= clock() - startJac;
+    cv_mem->counterJac++;
 
    if (retval < 0) {
       cvProcessError(cv_mem, CVDLS_JACFUNC_UNRECVR, "CVDLS", 
@@ -751,24 +746,17 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
     return(-1);
   }
 
-  //clock_t start4 = clock();
-
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
   //cvdls_mem->last_flag = linsolsetup_gpu(cv_mem);
   //Take so much time when matscaleaddi_gpu (check if fixed)
 
+  //Sum setup contribution from klu to general klu timer
+  //clock_t startKLUSparse=clock();
+
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
-  /*clock_t end4 = clock();
-
-  timeSUNLinSolSetup+= ((double) (end4 - start4)) / CLOCKS_PER_SEC;
-  counter12++;
-  if (counter12>1){//22099 20299
-    printf ("Counter SUNLinSolSetup: %d\n", counter12);
-    printf ("Total Time SUNLinSolSetup= %f\n",timeSUNLinSolSetup);
-  }
-*/
+  //cv_mem->timeKLUSparse+= clock() - startKLUSparse;
 
 return(cvdls_mem->last_flag);
 }
@@ -807,9 +795,14 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //retval = linsolsolve_gpu(&del, cvdls_mem->A, cv_mem, NV_DATA_S(x), NV_DATA_S(b));
   //CB05_1000 0.53 CB05_10000 3.15 mock_10000 3.03 mock_10000_e-9accuracy 1.83s
 
+  clock_t startKLUSparse=clock();
+
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
   //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
+
+  cv_mem->timeKLUSparse+= clock() - startKLUSparse;
+  cv_mem->counterKLUSparse++;
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);

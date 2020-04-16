@@ -298,14 +298,7 @@ void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype
 
 #include <time.h>
 
-/*int counter4=0;
-int counter5=0;
-int counter6=0;
-int counter7=0;
-double timeNewtonIt=0;
-double timecvStep=0;
-double timeNewton=0;
-double timeNoNewtonIt=0;*/
+
 
 /*=================================================================*/
 /*             Private Helper Functions Prototypes                 */
@@ -597,6 +590,27 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->cv_nge     = 0;
 
   cv_mem->cv_irfnd   = 0;
+
+//Profiling
+#ifndef PMC_PROFILING
+  cv_mem->counterNewtonIt=0;
+  cv_mem->counterLinSolSetup=0;
+  cv_mem->counterLinSolSolve=0;
+  cv_mem->countercvStep=0;
+  cv_mem->counterDerivNewton=0;
+  cv_mem->counterKLUSparse=0;
+  cv_mem->counterDerivSolve=0;
+  cv_mem->counterJac=0;
+
+  cv_mem->timeNewtonIt=PMC_TINY;
+  cv_mem->timeLinSolSetup=PMC_TINY;
+  cv_mem->timeLinSolSolve=PMC_TINY;
+  cv_mem->timecvStep=PMC_TINY;
+  cv_mem->timeDerivNewton=PMC_TINY;
+  cv_mem->timeKLUSparse=PMC_TINY;
+  cv_mem->timeDerivSolve=PMC_TINY;
+  cv_mem->timeJac=PMC_TINY;
+#endif
 
   /* Initialize other integrator optional outputs */
 
@@ -1394,8 +1408,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
         cvProcessError(cv_mem, CV_WARNING, "CVODE", "CVode", MSGCV_HNIL_DONE);
     }
 
+    clock_t startcvStep=clock();
+
     /* Call cvStep to take a step */
     kflag = cvStep(cv_mem);
+
+    cv_mem->timecvStep+= clock() - startcvStep;
+    cv_mem->countercvStep++;
 
     /* Process failed step cases, and exit loop */
     if (kflag != CV_SUCCESS) {
@@ -1485,6 +1504,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     }
 
   } /* end looping for internal steps */
+
 
   return(istate);
 }
@@ -1578,6 +1598,17 @@ void CVodeFree(void **cvode_mem)
 
   cv_mem = (CVodeMem) (*cvode_mem);
 
+#ifdef PMC_PROFILING
+  printf("timecvStep %lf, countercvStep %d\n",(double)(cv_mem->timecvStep/CLOCKS_PER_SEC),cv_mem->countercvStep);
+  printf("timeNewtonIt %lf, counterNewtonIt %d\n",(double)(cv_mem->timeNewtonIt/CLOCKS_PER_SEC),cv_mem->counterNewtonIt);
+  printf("timeLinSolSolve %lf, counterLinSolSolve %d\n",(double)(cv_mem->timeLinSolSolve/CLOCKS_PER_SEC),cv_mem->counterLinSolSolve);
+  printf("timeDerivNewton %lf, counterDerivNewton %d\n",(double)(cv_mem->timeDerivNewton/CLOCKS_PER_SEC),cv_mem->counterDerivNewton);
+  printf("timeLinSolSetup %lf, counterLinSolSetup %d\n",(double)(cv_mem->timeLinSolSetup/CLOCKS_PER_SEC),cv_mem->counterLinSolSetup);
+  printf("timeDerivSolve %lf, counterDerivSolve %d\n",(double)(cv_mem->timeDerivSolve/CLOCKS_PER_SEC),cv_mem->counterDerivSolve);
+  printf("timeKLUSparse %lf, counterKLUSparse %d\n",(double)(cv_mem->timeKLUSparse/CLOCKS_PER_SEC),cv_mem->counterKLUSparse);
+  printf("timeJac %lf, counterJac %d\n",(double)(cv_mem->timeJac/CLOCKS_PER_SEC),cv_mem->counterJac);
+#endif
+
   cvFreeVectors(cv_mem);
 
   if (cv_mem->cv_lfree != NULL) cv_mem->cv_lfree(cv_mem);
@@ -1660,6 +1691,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_tempv);
 
   cv_mem->cv_tempv1 = N_VClone(tmpl);
   if (cv_mem->cv_tempv1 == NULL) {
@@ -1668,9 +1700,9 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
   }
-  //N_VConst(ZERO, cv_mem->cv_tempv1);
+  N_VConst(ZERO, cv_mem->cv_tempv1);
 
-/*  cv_mem->cv_tempv2 = N_VClone(tmpl);
+  cv_mem->cv_tempv2 = N_VClone(tmpl);
   if (cv_mem->cv_tempv2 == NULL) {
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
@@ -1679,12 +1711,12 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     return(SUNFALSE);
   }
   N_VConst(ZERO, cv_mem->cv_tempv2);
-*/
+
   cv_mem->cv_acor_init = N_VClone(tmpl);
   if (cv_mem->cv_acor_init == NULL) {
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
-    //N_VDestroy(cv_mem->cv_tempv2);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1695,7 +1727,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
-    //N_VDestroy(cv_mem->cv_tempv2);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1707,7 +1739,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
     N_VDestroy(cv_mem->cv_acor_init);
     N_VDestroy(cv_mem->cv_tempv);
     N_VDestroy(cv_mem->cv_tempv1);
-    //N_VDestroy(cv_mem->cv_tempv2);
+    N_VDestroy(cv_mem->cv_tempv2);
     N_VDestroy(cv_mem->cv_ewt);
     N_VDestroy(cv_mem->cv_acor);
     return(SUNFALSE);
@@ -1724,7 +1756,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl)
       N_VDestroy(cv_mem->cv_last_yn);
       N_VDestroy(cv_mem->cv_tempv);
       N_VDestroy(cv_mem->cv_tempv1);
-      //N_VDestroy(cv_mem->cv_tempv2);
+      N_VDestroy(cv_mem->cv_tempv2);
       N_VDestroy(cv_mem->cv_ftemp);
       for (i=0; i < j; i++) N_VDestroy(cv_mem->cv_zn[i]);
       return(SUNFALSE);
@@ -1757,7 +1789,7 @@ static void cvFreeVectors(CVodeMem cv_mem)
   N_VDestroy(cv_mem->cv_acor);
   N_VDestroy(cv_mem->cv_tempv);
   N_VDestroy(cv_mem->cv_tempv1);
-  //N_VDestroy(cv_mem->cv_tempv2);
+  N_VDestroy(cv_mem->cv_tempv2);
   N_VDestroy(cv_mem->cv_acor_init);
   N_VDestroy(cv_mem->cv_last_yn);
   N_VDestroy(cv_mem->cv_ftemp);
@@ -2617,6 +2649,8 @@ static int cvNls(CVodeMem cv_mem, int nflag)
 {
   int flag = CV_SUCCESS;
 
+  clock_t startNewtonIt=clock();
+
   switch(cv_mem->cv_iter) {
   case CV_FUNCTIONAL:
     flag = cvNlsFunctional(cv_mem);
@@ -2625,6 +2659,9 @@ static int cvNls(CVodeMem cv_mem, int nflag)
     flag = cvNlsNewton(cv_mem, nflag);
     break;
   }
+
+  cv_mem->timeNewtonIt+= clock() - startNewtonIt;
+  cv_mem->counterNewtonIt++;
 
   return(flag);
 }
@@ -2796,8 +2833,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
 
     SUNDIALS_DEBUG_PRINT("Request derivative");
+
+    clock_t startDerivNewton=clock();
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+    cv_mem->timeDerivNewton+= clock() - startDerivNewton;
+    cv_mem->counterDerivNewton++;
+
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
     if (retval < 0) return(CV_RHSFUNC_FAIL);
@@ -2807,7 +2849,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
 
-//clock_t start=clock();      
+      clock_t startLinSolSetup=clock();
 
 	    ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
@@ -2815,14 +2857,9 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
       //ier = linsolsetup_gpu(cv_mem, convfail, vtemp1, vtemp2, vtemp3);
 
-/*clock_t end = clock();    
-timeNoNewtonIt+= ((double) (end - start)) / CLOCKS_PER_SEC;
-    counter7++;
-    if (counter7>100){
-      printf ("Counter NoNewtonIt: %d\n", counter7);
-      printf ("Total Time NoNewtonIt= %f\n",timeNoNewtonIt);
-    }
-*/
+      cv_mem->timeLinSolSetup+= clock() - startLinSolSetup;
+      cv_mem->counterLinSolSetup++;
+
 //SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
       cv_mem->cv_nsetups++;
       callSetup = SUNFALSE;
@@ -2836,12 +2873,15 @@ timeNoNewtonIt+= ((double) (end - start)) / CLOCKS_PER_SEC;
 
     /* Set acor to the initial guess for adjustments to the y vector */
     N_VScale(ONE, cv_mem->cv_acor_init, cv_mem->cv_acor);
-
     /* Do the Newton iteration */
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
-    ier = cvNewtonIteration(cv_mem);
-    SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
+    clock_t startLinSolSolve=clock();
+    ier = cvNewtonIteration(cv_mem);
+    cv_mem->timeLinSolSolve+= clock() - startLinSolSolve;
+    cv_mem->counterLinSolSolve++;
+
+    SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
     /* If there is a convergence failure and the Jacobian-related
        data appears not to be current, loop again with a call to lsetup
        in which convfail=CV_FAIL_BAD_J.  Otherwise return.                 */
@@ -2973,8 +3013,13 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     // Save norm of correction, evaluate f, and loop again
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
+
+    clock_t startDerivSolve=clock();
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
+    cv_mem->timeDerivSolve+= clock() - startDerivSolve;
+    cv_mem->counterDerivSolve++;
+
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
