@@ -729,11 +729,17 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   //Take so much time when matscaleaddi_gpu (check if fixed)
 
   //Sum setup contribution from klu to general klu timer
-  //clock_t startKLUSparse=clock();
+
+#ifdef PMC_PROFILING
+  clock_t startKLUSparseSetup=clock();
+#endif
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
-  //cv_mem->timeKLUSparse+= clock() - startKLUSparse;
+#ifdef PMC_PROFILING
+  cv_mem->timeKLUSparseSetup+= clock() - startKLUSparseSetup;
+  cv_mem->counterKLUSparseSetup++;
+#endif
 
 return(cvdls_mem->last_flag);
 }
@@ -773,7 +779,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //CB05_1000 0.53 CB05_10000 3.15 mock_10000 3.03 mock_10000_e-9accuracy 1.83s
 
 #ifdef PMC_PROFILING
-  clock_t startKLUSparse=clock();
+  clock_t startKLUSparseSolve=clock();
 #endif
 
   // call the generic linear system solver, and copy b to x
@@ -781,8 +787,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
 
 #ifdef PMC_PROFILING
-  cv_mem->timeKLUSparse+= clock() - startKLUSparse;
-  cv_mem->counterKLUSparse++;
+  cv_mem->timeKLUSparseSolve+= clock() - startKLUSparseSolve;
+  cv_mem->counterKLUSparseSolve++;
 #endif
 
   //copy x into b

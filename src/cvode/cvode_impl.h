@@ -284,7 +284,8 @@ typedef struct CVodeMemRec {
   int counterLinSolSolve;
   int countercvStep;
   int counterDerivNewton;
-  int counterKLUSparse;
+  int counterKLUSparseSetup;
+  int counterKLUSparseSolve;
   int counterDerivSolve;
   int counterJac;
 
@@ -293,7 +294,8 @@ typedef struct CVodeMemRec {
   double timeLinSolSolve;
   double timecvStep;
   double timeDerivNewton;
-  double timeKLUSparse;
+  double timeKLUSparseSetup;
+  double timeKLUSparseSolve;
   double timeDerivSolve;
   double timeJac;
 #endif

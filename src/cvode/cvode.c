@@ -598,7 +598,8 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->counterLinSolSolve=0;
   cv_mem->countercvStep=0;
   cv_mem->counterDerivNewton=0;
-  cv_mem->counterKLUSparse=0;
+  cv_mem->counterKLUSparseSetup=0;
+  cv_mem->counterKLUSparseSolve=0;
   cv_mem->counterDerivSolve=0;
   cv_mem->counterJac=0;
 
@@ -607,7 +608,8 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->timeLinSolSolve=PMC_TINY;
   cv_mem->timecvStep=PMC_TINY;
   cv_mem->timeDerivNewton=PMC_TINY;
-  cv_mem->timeKLUSparse=PMC_TINY;
+  cv_mem->timeKLUSparseSetup=PMC_TINY;
+  cv_mem->timeKLUSparseSolve=PMC_TINY;
   cv_mem->timeDerivSolve=PMC_TINY;
   cv_mem->timeJac=PMC_TINY;
 #endif
@@ -1608,7 +1610,8 @@ void CVodeFree(void **cvode_mem)
   printf("timeDerivNewton %lf, counterDerivNewton %d\n",(double)(cv_mem->timeDerivNewton/CLOCKS_PER_SEC),cv_mem->counterDerivNewton);
   printf("timeLinSolSetup %lf, counterLinSolSetup %d\n",(double)(cv_mem->timeLinSolSetup/CLOCKS_PER_SEC),cv_mem->counterLinSolSetup);
   printf("timeDerivSolve %lf, counterDerivSolve %d\n",(double)(cv_mem->timeDerivSolve/CLOCKS_PER_SEC),cv_mem->counterDerivSolve);
-  printf("timeKLUSparse %lf, counterKLUSparse %d\n",(double)(cv_mem->timeKLUSparse/CLOCKS_PER_SEC),cv_mem->counterKLUSparse);
+  printf("timeKLUSparseSetup %lf, counterKLUSparseSetup %d\n",(double)(cv_mem->timeKLUSparseSetup/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSetup);
+  printf("timeKLUSparseSolve %lf, counterKLUSparseSolve %d\n",(double)(cv_mem->timeKLUSparseSolve/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSolve);
   printf("timeJac %lf, counterJac %d\n",(double)(cv_mem->timeJac/CLOCKS_PER_SEC),cv_mem->counterJac);
 #endif
 
