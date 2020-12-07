@@ -115,9 +115,6 @@ int main(void)
   LS = NULL;
   cvode_mem = NULL;
 
-int i;
-for(i=0;i<5000;i++){
-
   /* Create a serial vector */
 
   u = N_VNew_Serial(NEQ);  /* Allocate u vector */
@@ -176,25 +173,23 @@ for(i=0;i<5000;i++){
   /* In loop over output points: call CVode, print results, test for errors */
 
   umax = N_VMaxNorm(u);
-  //PrintHeader(reltol, abstol, umax);
+  PrintHeader(reltol, abstol, umax);
   for(iout=1, tout=T1; iout <= NOUT; iout++, tout += DTOUT) {
     flag = CVode(cvode_mem, tout, u, &t, CV_NORMAL);
     if(check_flag(&flag, "CVode", 1)) break;
     umax = N_VMaxNorm(u);
     flag = CVodeGetNumSteps(cvode_mem, &nst);
     check_flag(&flag, "CVodeGetNumSteps", 1);
-   // PrintOutput(t, umax, nst);
+    PrintOutput(t, umax, nst);
   }
 
- // PrintFinalStats(cvode_mem);  /* Print some final statistics   */
+  PrintFinalStats(cvode_mem);  /* Print some final statistics   */
 
   N_VDestroy(u);          /* Free the u vector          */
   CVodeFree(&cvode_mem);  /* Free the integrator memory */
   SUNLinSolFree(LS);      /* Free linear solver memory  */
   SUNMatDestroy(A);       /* Free the matrix memory     */
   free(data);             /* Free the user data         */
-
-}
 
   return(0);
 }
@@ -203,7 +198,7 @@ for(i=0;i<5000;i++){
  *-------------------------------
  * Functions called by the solver
  *-------------------------------
-*/
+ */
 
 /* f routine. Compute f(t,u). */
 

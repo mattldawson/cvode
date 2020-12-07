@@ -35,6 +35,7 @@
 #include <sundials/sundials_math.h>
 #include <sundials/sundials_types.h>
 #include <nvector/nvector_serial.h>
+
 #ifdef SUNDIALS_DEBUG
 #define SUNDIALS_DEBUG_PRINT(x) sundials_debug_print(cv_mem, x, SUNFALSE, 0, __LINE__, __func__)
 #define SUNDIALS_DEBUG_PRINT_INT(x,y) sundials_debug_print(cv_mem, x, SUNFALSE, y, __LINE__, __func__)
@@ -1105,6 +1106,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
     cv_mem->cv_tretlast = *tret = cv_mem->cv_tn;
 
+#ifdef SUNDIALS_DEBUG
+    // Initialize correction arrays to zero for easier comparison
+    // of debug output
+    N_VConst(ZERO, cv_mem->cv_acor);
+    N_VConst(ZERO, cv_mem->cv_acor_init);
+#endif
+
     ier = cvInitialSetup(cv_mem);
     if (ier!= CV_SUCCESS) return(ier);
 
@@ -1180,25 +1188,14 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     SUNDIALS_DEBUG_PRINT("After initial scaling of zn[1] by h0");
 
     /* Try to improve initial guess of zn[1] */
-
-    /*if (cv_mem->cv_ghfun) {
-      SUNDIALS_DEBUG_PRINT("Calling guess helper");
-      N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_zn[1], cv_mem->cv_tempv1);
-      cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_tempv1,
-                       cv_mem->cv_zn[0], cv_mem->cv_zn[1], cv_mem->cv_user_data,
-                       cv_mem->cv_tempv, cv_mem->cv_acor_init);
-      SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
-    }*/
-
-    /* Try to improve initial guess of zn[1] */
-    /*if (cv_mem->cv_ghfun) {
+    if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_zn[1], cv_mem->cv_tempv1);
       cv_mem->cv_ghfun(cv_mem->cv_tn + cv_mem->cv_h, cv_mem->cv_h, cv_mem->cv_tempv1,
                        cv_mem->cv_zn[0], cv_mem->cv_zn[1], cv_mem->cv_user_data,
                        cv_mem->cv_tempv2, cv_mem->cv_acor_init);
       SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
-    }*/
+    }
 
     /* Check for zeros of root function g at and near t0. */
 
@@ -1509,7 +1506,6 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     }
 
   } /* end looping for internal steps */
-
 
   return(istate);
 }
@@ -2815,22 +2811,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
-    N_VScale(cv_mem->cv_rl1, cv_mem->cv_zn[1], cv_mem->cv_ftemp);
-    cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
-                     cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
-                     cv_mem->cv_tempv, cv_mem->cv_acor_init);
-    SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
-  }
-
-  /*if (cv_mem->cv_ghfun) { //new
-    SUNDIALS_DEBUG_PRINT("Calling guess helper");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     retval = cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
-                     cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
+                         cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
                          cv_mem->cv_tempv1, cv_mem->cv_acor_init);
     SUNDIALS_DEBUG_PRINT_FULL("Returned from guess helper");
     if (retval<0) return(RHSFUNC_RECVR);
-  }*/
+  }
 
   /* Looping point for the solution of the nonlinear system.
      Evaluate f at the predicted y, call lsetup if indicated, and
@@ -2862,15 +2849,12 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     if (callSetup)
     {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
-
 #ifdef PMC_PROFILING
       clock_t startLinSolSetup=clock();
 #endif
-
-	    ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
+      ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
-
       //ier = linsolsetup_gpu(cv_mem, convfail, vtemp1, vtemp2, vtemp3);
 
 #ifdef PMC_PROFILING
@@ -2878,19 +2862,20 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       cv_mem->counterLinSolSetup++;
 #endif
 
-//SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
+      SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
       cv_mem->cv_nsetups++;
       callSetup = SUNFALSE;
       cv_mem->cv_gamrat = cv_mem->cv_crate = ONE;
       cv_mem->cv_gammap = cv_mem->cv_gamma;
       cv_mem->cv_nstlp = cv_mem->cv_nst;
-      // Return if lsetup failed
+      /* Return if lsetup failed */
       if (ier < 0) return(CV_LSETUP_FAIL);
       if (ier > 0) return(CONV_FAIL);
     }
 
     /* Set acor to the initial guess for adjustments to the y vector */
     N_VScale(ONE, cv_mem->cv_acor_init, cv_mem->cv_acor);
+
     /* Do the Newton iteration */
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
 
@@ -2906,6 +2891,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 #endif
 
     SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
+
     /* If there is a convergence failure and the Jacobian-related
        data appears not to be current, loop again with a call to lsetup
        in which convfail=CV_FAIL_BAD_J.  Otherwise return.                 */
@@ -2937,19 +2923,19 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
   cv_mem->cv_mnewt = m = 0;
 
-  // Initialize delp to avoid compiler warning message
+  /* Initialize delp to avoid compiler warning message */
   del = delp = ZERO;
 
-  // Looping point for Newton iteration
+  /* Looping point for Newton iteration */
   for(;;) {
 
-    // Evaluate the residual of the nonlinear system
+    /* Evaluate the residual of the nonlinear system */
     N_VLinearSum(cv_mem->cv_rl1, cv_mem->cv_zn[1], ONE,
                  cv_mem->cv_acor, cv_mem->cv_tempv);
     N_VLinearSum(cv_mem->cv_gamma, cv_mem->cv_ftemp, -ONE,
                  cv_mem->cv_tempv, cv_mem->cv_tempv);
 
-    // Call the lsolve function
+    /* Call the lsolve function */
     b = cv_mem->cv_tempv;
     SUNDIALS_DEBUG_PRINT("Calling linear solver");
     retval = cv_mem->cv_lsolve(cv_mem, b, cv_mem->cv_ewt,
@@ -2963,8 +2949,8 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
 
-    // If lsolve had a recoverable failure and Jacobian data is
-    //   not current, signal to try the solution again
+    /* If lsolve had a recoverable failure and Jacobian data is
+       not current, signal to try the solution again            */
     if (retval > 0) {
       if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup))
         return(TRY_AGAIN);
@@ -2973,11 +2959,11 @@ static int cvNewtonIteration(CVodeMem cv_mem)
         return(CONV_FAIL);
     }
 
-    // Get WRMS norm of correction; add correction to acor and y
+    /* Get WRMS norm of correction */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
 
     /* Call a user-supplied function to improve guesses for zn(0), if one exists */
-    /*if (cv_mem->cv_ghfun) {
+    if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
       retval = cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
@@ -2993,12 +2979,12 @@ static int cvNewtonIteration(CVodeMem cv_mem)
       }
     }
 
-    // Check for negative concentrations
+    /* Check for negative concentrations */
     N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
     if (N_VMin(cv_mem->cv_ftemp) < -PMC_TINY) {
       SUNDIALS_DEBUG_PRINT_FULL("Negative concentration from adjustment");
       return(CONV_FAIL);
-    }*/
+    }
 
     /* Add correction to acor and y */
     SUNDIALS_DEBUG_PRINT_REAL("Got WRMS norm of correction", del);
@@ -3006,8 +2992,8 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
     SUNDIALS_DEBUG_PRINT_FULL("Updated correction and predicted y");
 
-    // Test for convergence.  If m > 0, an estimate of the convergence
-    //   rate constant is stored in crate, and used in the test.
+    /* Test for convergence.  If m > 0, an estimate of the convergence
+       rate constant is stored in crate, and used in the test.        */
     if (m > 0) {
       cv_mem->cv_crate = SUNMAX(CRDOWN * cv_mem->cv_crate, del/delp);
       SUNDIALS_DEBUG_PRINT_REAL("Got new convergence rate", cv_mem->cv_crate);
@@ -3015,16 +3001,17 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     dcon = del * SUNMIN(ONE, cv_mem->cv_crate) / cv_mem->cv_tq[4];
     SUNDIALS_DEBUG_PRINT_REAL("Got dcon", dcon);
 
-   if (dcon <= ONE) {
+    if (dcon <= ONE) {
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
       cv_mem->cv_jcur = SUNFALSE;
-      return(CV_SUCCESS); // Nonlinear system was solved successfully
+      return(CV_SUCCESS); /* Nonlinear system was solved successfully */
     }
+
     cv_mem->cv_mnewt = ++m;
 
-    // Stop at maxcor iterations or if iter. seems to be diverging.
-    //   If still not converged and Jacobian data is not current,
-    //   signal to try the solution again
+    /* Stop at maxcor iterations or if iter. seems to be diverging.
+       If still not converged and Jacobian data is not current,
+       signal to try the solution again                            */
     if ((m == cv_mem->cv_maxcor) || ((m >= 2) && (del > RDIV*delp))) {
       if ((!cv_mem->cv_jcur) && (cv_mem->cv_lsetup)) {
         return(TRY_AGAIN);
@@ -3034,7 +3021,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
       }
     }
 
-    // Save norm of correction, evaluate f, and loop again
+    /* Save norm of correction, evaluate f, and loop again */
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
 

@@ -602,19 +602,19 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
       for (i=Ap[j]; i<Ap[j+1]; i++)
         if (Ai[i] == j) {
           Ax[i] = ONE + c*Ax[i];
-	
+
         } else {
           Ax[i] = c*Ax[i];
         }
 
 //printf("Ax5 %lf:", Ax[5]);
 
-    
+
   /*   case 2: A has sufficient storage, but does not already contain a diagonal */
   } else if (!newmat) {
 
 	printf("CASE 2 \n");
-   
+
     /* create work arrays for nonzero indices and values in a single column (row) */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));
     x = (realtype *) malloc(M * sizeof(realtype));
