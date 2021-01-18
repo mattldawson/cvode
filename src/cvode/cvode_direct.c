@@ -707,7 +707,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   }
 
   //retval = matscaleaddi_gpu(-cv_mem->cv_gamma, cvdls_mem->A, cv_mem);
-  //good, 0.01 CB05_10000 (only passing jac_gpu, with passing the jac indices was 0.03, so its important to reduce data mov)
+  //good, 0.01 CB05_10000 (only passing J_gpu, with passing the jac indices was 0.03, so its important to reduce data mov)
 
   // Scale and add I to get A = I - gamma*J //
   retval = SUNMatScaleAddI(-cv_mem->cv_gamma, cvdls_mem->A);
