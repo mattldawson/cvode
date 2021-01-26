@@ -613,7 +613,9 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
   /*   case 2: A has sufficient storage, but does not already contain a diagonal */
   } else if (!newmat) {
 
-	printf("CASE 2 \n");
+#ifdef PMC_DEBUG
+	  printf("WARNING: Triggering KLU case 2\n");
+#endif
 
     /* create work arrays for nonzero indices and values in a single column (row) */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));
@@ -670,7 +672,9 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
   /*   case 3: A must be reallocated with sufficient storage */
   } else {
 
+#ifdef PMC_DEBUG
 	printf("WARNING: Triggering KLU case 3\n");
+#endif
 
     /* create work arrays for nonzero indices and values */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));

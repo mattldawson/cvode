@@ -1600,6 +1600,7 @@ void CVodeFree(void **cvode_mem)
   cv_mem = (CVodeMem) (*cvode_mem);
 
 #ifdef PMC_PROFILING
+  printf("PROFILING CVODE CPU:\n");
   printf("timecvStep %lf, countercvStep %d\n",(double)(cv_mem->timecvStep/CLOCKS_PER_SEC),cv_mem->countercvStep);
   printf("timeNewtonIt %lf, counterNewtonIt %d\n",(double)(cv_mem->timeNewtonIt/CLOCKS_PER_SEC),cv_mem->counterNewtonIt);
   printf("timeLinSolSolve %lf, counterLinSolSolve %d\n",(double)(cv_mem->timeLinSolSolve/CLOCKS_PER_SEC),cv_mem->counterLinSolSolve);
@@ -1609,6 +1610,7 @@ void CVodeFree(void **cvode_mem)
   printf("timeKLUSparseSetup %lf, counterKLUSparseSetup %d\n",(double)(cv_mem->timeKLUSparseSetup/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSetup);
   printf("timeKLUSparseSolve %lf, counterKLUSparseSolve %d\n",(double)(cv_mem->timeKLUSparseSolve/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSolve);
   printf("timeJac %lf, counterJac %d\n",(double)(cv_mem->timeJac/CLOCKS_PER_SEC),cv_mem->counterJac);
+  printf("-----------------\n");
 #endif
 
   cvFreeVectors(cv_mem);
@@ -2942,10 +2944,6 @@ static int cvNewtonIteration(CVodeMem cv_mem)
                                cv_mem->cv_y, cv_mem->cv_ftemp);
     SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval+100);
     cv_mem->cv_nni++;
-
-    //CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
-    //N_Vector x = cvdls_mem->x;
-    //retval2 = linsolsolve_gpu(&m,&del,&delp,&dcon,cvdls_mem->A, cv_mem, NV_DATA_S(x), NV_DATA_S(b));
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
 

@@ -649,7 +649,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
  
   /* If jok = SUNTRUE, use saved copy of J */
   if (jok) {
-    //if (0) {
     *jcurPtr = SUNFALSE;
     retval = SUNMatCopy(cvdls_mem->savedJ, cvdls_mem->A);
     if (retval) {
@@ -706,15 +705,8 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   }
 
-  //retval = matscaleaddi_gpu(-cv_mem->cv_gamma, cvdls_mem->A, cv_mem);
-  //good, 0.01 CB05_10000 (only passing J_gpu, with passing the jac indices was 0.03, so its important to reduce data mov)
-
   // Scale and add I to get A = I - gamma*J //
   retval = SUNMatScaleAddI(-cv_mem->cv_gamma, cvdls_mem->A);
-  //0.02 CB05_10000
-
-//retval = 0;
-
 
   if (retval) {
     cvProcessError(cv_mem, CVDLS_SUNMAT_FAIL, "CVDLS",
@@ -725,10 +717,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
-  //cvdls_mem->last_flag = linsolsetup_gpu(cv_mem);
-  //Take so much time when matscaleaddi_gpu (check if fixed)
-
-  //Sum setup contribution from klu to general klu timer
 
 #ifdef PMC_PROFILING
   clock_t startKLUSparseSetup=clock();
@@ -770,13 +758,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     return(CVDLS_LMEM_NULL);
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
-
-  //clock_t start4 = clock();
-
-  //N_Vector x = cvdls_mem->x;
-  //double del=0;
-  //retval = linsolsolve_gpu(&del, cvdls_mem->A, cv_mem, NV_DATA_S(x), NV_DATA_S(b));
-  //CB05_1000 0.53 CB05_10000 3.15 mock_10000 3.03 mock_10000_e-9accuracy 1.83s
 
 #ifdef PMC_PROFILING
   clock_t startKLUSparseSolve=clock();
