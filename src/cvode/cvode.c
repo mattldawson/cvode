@@ -299,7 +299,9 @@ void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype
 
 #include <time.h>
 
-
+#ifdef PMC_PROFILING
+#include <mpi.h>
+#endif
 
 /*=================================================================*/
 /*             Private Helper Functions Prototypes                 */
@@ -1408,13 +1410,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     }
 
 #ifdef PMC_PROFILING
-    clock_t startcvStep=clock();
+    double startcvStep=MPI_Wtime();
 #endif
     /* Call cvStep to take a step */
     kflag = cvStep(cv_mem);
 
 #ifdef PMC_PROFILING
-    cv_mem->timecvStep+= clock() - startcvStep;
+    cv_mem->timecvStep+= MPI_Wtime() - startcvStep;
     cv_mem->countercvStep++;
 #endif
 
@@ -1600,17 +1602,41 @@ void CVodeFree(void **cvode_mem)
   cv_mem = (CVodeMem) (*cvode_mem);
 
 #ifdef PMC_PROFILING
-  printf("PROFILING CVODE CPU:\n");
-  printf("timecvStep %lf, countercvStep %d\n",(double)(cv_mem->timecvStep/CLOCKS_PER_SEC),cv_mem->countercvStep);
-  printf("timeNewtonIt %lf, counterNewtonIt %d\n",(double)(cv_mem->timeNewtonIt/CLOCKS_PER_SEC),cv_mem->counterNewtonIt);
-  printf("timeLinSolSolve %lf, counterLinSolSolve %d\n",(double)(cv_mem->timeLinSolSolve/CLOCKS_PER_SEC),cv_mem->counterLinSolSolve);
-  printf("timeDerivNewton %lf, counterDerivNewton %d\n",(double)(cv_mem->timeDerivNewton/CLOCKS_PER_SEC),cv_mem->counterDerivNewton);
-  printf("timeLinSolSetup %lf, counterLinSolSetup %d\n",(double)(cv_mem->timeLinSolSetup/CLOCKS_PER_SEC),cv_mem->counterLinSolSetup);
-  printf("timeDerivSolve %lf, counterDerivSolve %d\n",(double)(cv_mem->timeDerivSolve/CLOCKS_PER_SEC),cv_mem->counterDerivSolve);
-  printf("timeKLUSparseSetup %lf, counterKLUSparseSetup %d\n",(double)(cv_mem->timeKLUSparseSetup/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSetup);
-  printf("timeKLUSparseSolve %lf, counterKLUSparseSolve %d\n",(double)(cv_mem->timeKLUSparseSolve/CLOCKS_PER_SEC),cv_mem->counterKLUSparseSolve);
-  printf("timeJac %lf, counterJac %d\n",(double)(cv_mem->timeJac/CLOCKS_PER_SEC),cv_mem->counterJac);
-  printf("-----------------\n");
+
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+  double timecvStep=cv_mem->timecvStep;
+  double timeKLUSparse_tmp = cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve;
+  double timeKLUSparse=timeKLUSparse_tmp;
+
+  MPI_Reduce(&cv_mem->timecvStep, &timecvStep, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  MPI_Reduce(&timeKLUSparse_tmp, &timeKLUSparse, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+
+  if (rank == 0){
+
+    printf("PROFILING CVODE CPU:\n");
+    printf("timecvStep %lf, countercvStep %d\n",timecvStep,cv_mem->countercvStep);
+
+    /*printf("timeNewtonIt %lf, counterNewtonIt %d\n",cv_mem->timeNewtonIt,cv_mem->counterNewtonIt);
+    printf("timeLinSolSolve %lf, counterLinSolSolve %d\n",cv_mem->timeLinSolSolve,cv_mem->counterLinSolSolve);
+    printf("timeDerivNewton %lf, counterDerivNewton %d\n",cv_mem->timeDerivNewton,cv_mem->counterDerivNewton);
+    printf("timeLinSolSetup %lf, counterLinSolSetup %d\n",cv_mem->timeLinSolSetup,cv_mem->counterLinSolSetup);
+    printf("timeDerivSolve %lf, counterDerivSolve %d\n",cv_mem->timeDerivSolve,cv_mem->counterDerivSolve);
+    printf("timeKLUSparseSetup %lf, counterKLUSparseSetup %d\n",cv_mem->timeKLUSparseSetup,cv_mem->counterKLUSparseSetup);
+    printf("timeKLUSparseSolve %lf, counterKLUSparseSolve %d\n",cv_mem->timeKLUSparseSolve,cv_mem->counterKLUSparseSolve);
+    printf("timeJac %lf, counterJac %d\n",cv_mem->timeJac,cv_mem->counterJac);
+    */
+
+
+    printf("timeKLUSparse %lf, counterKLUSparseSolve %d\n",timeKLUSparse,cv_mem->counterKLUSparseSolve);
+
+    printf("-----------------\n");
+
+  }
+
+
+
 #endif
 
   cvFreeVectors(cv_mem);
@@ -2654,7 +2680,7 @@ static int cvNls(CVodeMem cv_mem, int nflag)
   int flag = CV_SUCCESS;
 
 #ifdef PMC_PROFILING
-  clock_t startNewtonIt=clock();
+  double startNewtonIt=MPI_Wtime();
 #endif
   switch(cv_mem->cv_iter) {
   case CV_FUNCTIONAL:
@@ -2666,7 +2692,7 @@ static int cvNls(CVodeMem cv_mem, int nflag)
   }
 
 #ifdef PMC_PROFILING
-  cv_mem->timeNewtonIt+= clock() - startNewtonIt;
+  cv_mem->timeNewtonIt+= MPI_Wtime() - startNewtonIt;
   cv_mem->counterNewtonIt++;
 #endif
 
@@ -2833,13 +2859,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
 #ifdef PMC_PROFILING
-    clock_t startDerivNewton=clock();
+    double startDerivNewton=MPI_Wtime();
 #endif
 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
 #ifdef PMC_PROFILING
-    cv_mem->timeDerivNewton+= clock() - startDerivNewton;
+    cv_mem->timeDerivNewton+= MPI_Wtime() - startDerivNewton;
     cv_mem->counterDerivNewton++;
 #endif
 
@@ -2852,7 +2878,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
 #ifdef PMC_PROFILING
-      clock_t startLinSolSetup=clock();
+      double startLinSolSetup=MPI_Wtime();
 #endif
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
@@ -2860,7 +2886,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       //ier = linsolsetup_gpu(cv_mem, convfail, vtemp1, vtemp2, vtemp3);
 
 #ifdef PMC_PROFILING
-      cv_mem->timeLinSolSetup+= clock() - startLinSolSetup;
+      cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
       cv_mem->counterLinSolSetup++;
 #endif
 
@@ -2882,13 +2908,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
 
 #ifdef PMC_PROFILING
-    clock_t startLinSolSolve=clock();
+    double startLinSolSolve=MPI_Wtime();
 #endif
 
     ier = cvNewtonIteration(cv_mem);
 
 #ifdef PMC_PROFILING
-    cv_mem->timeLinSolSolve+= clock() - startLinSolSolve;
+    cv_mem->timeLinSolSolve+= MPI_Wtime() - startLinSolSolve;
     cv_mem->counterLinSolSolve++;
 #endif
 
@@ -3024,13 +3050,13 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
 #ifdef PMC_PROFILING
-    clock_t startDerivSolve=clock();
+    double startDerivSolve=MPI_Wtime();
 #endif
 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
 #ifdef PMC_PROFILING
-    cv_mem->timeDerivSolve+= clock() - startDerivSolve;
+    cv_mem->timeDerivSolve+= MPI_Wtime() - startDerivSolve;
     cv_mem->counterDerivSolve++;
 #endif
 

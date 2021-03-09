@@ -36,6 +36,10 @@
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 
+#ifdef PMC_PROFILING
+#include <mpi.h>
+#endif
+
 /*=================================================================
   FUNCTION SPECIFIC CONSTANTS
   =================================================================*/
@@ -46,8 +50,6 @@
 #define ZERO         RCONST(0.0)
 #define ONE          RCONST(1.0)
 #define TWO          RCONST(2.0)
-
-//DEBUG TIMINGS *cguzman
 
 #include <time.h>
 
@@ -672,7 +674,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
     }
 
 #ifdef PMC_PROFILING
-    clock_t startJac=clock();
+    double startJac=MPI_Wtime();
 #endif
 
     //not working cvdls_mem->J_data->gamma = cv_mem->cv_gamma;
@@ -680,7 +682,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
                             fpred, cvdls_mem->A, 
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
 #ifdef PMC_PROFILING
-    cv_mem->timeJac+= clock() - startJac;
+    cv_mem->timeJac+= MPI_Wtime() - startJac;
     cv_mem->counterJac++;
 #endif
 
@@ -719,13 +721,13 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   //  return success/failure flag
 
 #ifdef PMC_PROFILING
-  clock_t startKLUSparseSetup=clock();
+  double startKLUSparseSetup = MPI_Wtime();
 #endif
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
 #ifdef PMC_PROFILING
-  cv_mem->timeKLUSparseSetup+= clock() - startKLUSparseSetup;
+  cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
   cv_mem->counterKLUSparseSetup++;
 #endif
 
@@ -760,7 +762,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
 #ifdef PMC_PROFILING
-  clock_t startKLUSparseSolve=clock();
+  double startKLUSparseSolve = MPI_Wtime();
 #endif
 
   // call the generic linear system solver, and copy b to x
@@ -768,7 +770,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
 
 #ifdef PMC_PROFILING
-  cv_mem->timeKLUSparseSolve+= clock() - startKLUSparseSolve;
+  cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
   cv_mem->counterKLUSparseSolve++;
 #endif
 
