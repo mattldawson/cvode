@@ -767,7 +767,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
-  //CB05_1000 0.39 CB05_10000 3.82 mock_10000 0.86
 
 #ifdef PMC_PROFILING
   cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;

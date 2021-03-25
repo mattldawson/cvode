@@ -818,6 +818,37 @@ int CVodeGetCurrentTime(void *cvode_mem, realtype *tcur)
   return(CV_SUCCESS);
 }
 
+#ifdef PMC_PROFILING
+
+int CVodeGetcounterLS(void *cvode_mem, int *tcur)
+{
+  CVodeMem cv_mem;
+
+  cv_mem = (CVodeMem) cvode_mem;
+
+  *tcur = cv_mem->counterLinSolSolve;
+
+  //cv_mem->counterLinSolSolve=0;
+  
+  return(CV_SUCCESS);
+}
+
+int CVodeGettimeLS(void *cvode_mem, double *tcur)
+{
+  CVodeMem cv_mem;
+
+  cv_mem = (CVodeMem) cvode_mem;
+
+  *tcur = (double)(cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve);
+
+  //cv_mem->timeKLUSparseSetup = 0.0;
+  //cv_mem->timeKLUSparseSolve = 0.0;
+
+  return(CV_SUCCESS);
+}
+
+#endif
+
 /* 
  * CVodeGetTolScaleFactor
  *
