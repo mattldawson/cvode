@@ -213,7 +213,7 @@ typedef struct CVodeMemRec {
 
   /* Linear Solver specific memory */
 
-  void *cv_lmem;           
+  void *cv_lmem;
 
   /*------------
     Saved Values

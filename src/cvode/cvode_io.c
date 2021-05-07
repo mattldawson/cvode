@@ -829,7 +829,7 @@ int CVodeGetcounterLS(void *cvode_mem, int *tcur)
   *tcur = cv_mem->counterLinSolSolve;
 
   //cv_mem->counterLinSolSolve=0;
-  
+
   return(CV_SUCCESS);
 }
 
@@ -849,7 +849,7 @@ int CVodeGettimeLS(void *cvode_mem, double *tcur)
 
 #endif
 
-/* 
+/*
  * CVodeGetTolScaleFactor
  *
  * Returns a suggested factor for scaling tolerances
