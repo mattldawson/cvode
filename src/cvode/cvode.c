@@ -1406,7 +1406,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
         else
           cvProcessError(cv_mem, CV_ILL_INPUT, "CVODE", "CVode",
                          MSGCV_EWT_NOW_BAD, cv_mem->cv_tn);
-	
+
         istate = CV_ILL_INPUT;
         cv_mem->cv_tretlast = *tret = cv_mem->cv_tn;
         N_VScale(ONE, cv_mem->cv_zn[0], yout);

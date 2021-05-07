@@ -21,6 +21,7 @@
 INSTALL(CODE "MESSAGE(\"\nInstall CVODE\n\")")
 
 # Add variable cvode_SOURCES with the sources for the CVODE library
+
 SET(cvode_SOURCES
   cvode.c
   cvode_bandpre.c
@@ -29,7 +30,22 @@ SET(cvode_SOURCES
   cvode_direct.c        
   cvode_io.c
   cvode_spils.c
+  #cvode_gpu.cu
   )
+
+if (CUDA_FOUND)
+SET(cuda_SOURCES
+	#cvode_gpu.cu
+  itsolver_gpu.cu
+  libsolv.cu
+)
+endif()
+#-dc -lcusolver -lcusparse_static -lculibos -lcudart_static -lpthread -ldl
+set(STD_CUDA_FLAGS "-arch=compute_70 -code=sm_70 --compiler-options '-fPIC' -lcublas -lcudart")
+
+set_source_files_properties(${cuda_SOURCES} PROPERTIES COMPILE_FLAGS
+        ${STD_CUDA_FLAGS})
+
 
 # Add variable shared_SOURCES with the common SUNDIALS sources which will
 # also be included in the CVODE library
@@ -98,6 +114,7 @@ IF(BUILD_STATIC_LIBS)
   # Add the build target for the static CVODE library
   ADD_LIBRARY(sundials_cvode_static STATIC 
     ${cvode_SOURCES} ${shared_SOURCES} ${sunmatrix_SOURCES} ${sunlinsol_SOURCES})
+#${cuda_SOURCES}
 
   # Set the library name and make sure it is not deleted
   SET_TARGET_PROPERTIES(sundials_cvode_static
@@ -114,6 +131,7 @@ IF(BUILD_SHARED_LIBS)
   # Add the build target for the CVODE library
   ADD_LIBRARY(sundials_cvode_shared SHARED 
     ${cvode_SOURCES} ${shared_SOURCES} ${sunmatrix_SOURCES} ${sunlinsol_SOURCES})
+#${cuda_SOURCES}
 
   IF(UNIX)
     TARGET_LINK_LIBRARIES(sundials_cvode_shared m)
