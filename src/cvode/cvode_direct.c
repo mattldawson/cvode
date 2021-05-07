@@ -36,7 +36,7 @@
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 
-#ifdef CUDA_ENABLE
+#ifndef CUDA_ENABLE
 #include "itsolver_gpu.h"
 #endif
 
@@ -61,16 +61,20 @@
   EXPORTED FUNCTIONS -- REQUIRED
   =================================================================*/
 
-#ifdef CUDA_ENABLE
+#ifndef CUDA_ENABLE
 
 void alloc_solver_gpu(CVodeMem cv_mem)
 {
-  itsolver *bicg = &(cv_mem->bicg);
+  itsolver *bicg = (itsolver *)cv_mem->bicg;
+  //itsolver *bicg = &(cv_mem->bicg);
+  printf("Finished alloc_solver_gpu\n");
   CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
   SUNMatrix J = cvdls_mem->A;
 
-  double *ewt = NV_DATA_S(cv_mem->cv_ewt);
-  double *tempv = NV_DATA_S(cv_mem->cv_tempv);
+  printf("Finished alloc_solver_gpu\n");
+
+  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
+  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
 
   //Init GPU ODE solver variables
   //Linking Matrix data, later this data must be allocated in GPU
@@ -79,6 +83,8 @@ void alloc_solver_gpu(CVodeMem cv_mem)
   bicg->nrows=SM_NP_S(J);
   bicg->mattype=1; //CSC
   bicg->A=(double*)SM_DATA_S(J);
+
+  printf("Finished alloc_solver_gpu\n");
 
   //ModelDataGPU *mGPU = &sd->mGPU;
   //bicg->dA=mGPU->J;//set itsolver gpu pointer to jac pointer initialized at camp
@@ -97,13 +103,14 @@ void alloc_solver_gpu(CVodeMem cv_mem)
   //bicg->jA=(int*)SM_INDEXVALS_S(J);
   //bicg->iA=(int*)SM_INDEXPTRS_S(J);
 
-  int device=0;//Selected GPU
-  cudaDeviceProp prop;
-  cudaGetDeviceProperties(&prop, device);
-  bicg->threads=prop.maxThreadsPerBlock;//1024; //128 set at max gpu
+  //move
+  //int device=0;//Selected GPU
+  //cudaDeviceProp prop;
+  //cudaGetDeviceProperties(&prop, device);
+  //bicg->threads=prop.maxThreadsPerBlock;//1024; //128 set at max gpu
   //bicg->threads=1024;
-  printf("bicg->threads %d \n", bicg->threads);
-  bicg->blocks=(bicg->nrows+bicg->threads-1)/bicg->threads;
+  //printf("bicg->threads %d \n", bicg->threads);
+  //bicg->blocks=(bicg->nrows+bicg->threads-1)/bicg->threads;
 
   // Allocating matrix data to the GPU
   cudaMalloc((void**)&bicg->djA,bicg->nnz*sizeof(int));
@@ -127,7 +134,9 @@ void alloc_solver_gpu(CVodeMem cv_mem)
   cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
 
   //Init Linear Solver variables
-  createSolver(bicg);
+  //createSolver(bicg);
+
+  printf("Finished alloc_solver_gpu\n");
 
 #ifdef PMC_DEBUG_GPU
   bicg->counterprecvStep=0;
@@ -264,9 +273,12 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS,
   /* Attach linear solver memory to integrator memory */
   cv_mem->cv_lmem = cvdls_mem;
 
-#ifdef CUDA_ENABLE
-  //alloc_solver_gpu(cv_mem);
+#ifndef CUDA_ENABLE
+  printf("alloc_solver_gpu\n");
+  alloc_solver_gpu(cv_mem);
 #endif
+
+  printf("CVDlsSetLinearSolver\n");
 
   return(CVDLS_SUCCESS);
 }
@@ -844,7 +856,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef CUDA_ENABLE
+#ifdef __cplusplus
 
 #ifdef PMC_PROFILING
   double startKLUSparseSetup = MPI_Wtime();
@@ -910,7 +922,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
-#ifdef CUDA_ENABLE
+#ifdef __cplusplus
 
 #ifdef PMC_PROFILING
   double startKLUSparseSolve = MPI_Wtime();
@@ -921,13 +933,13 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  double *b_ptr = NV_DATA_S(b);//tempv
+  double *b_ptr = N_VGetArrayPointer(b);//tempv
   cudaMemcpy(bicg->dtempv,b_ptr,bicg->nrows*sizeof(int),cudaMemcpyHostToDevice);
 
   //solveGPU(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
   //solveGPU_block(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
 
-  double* x_ptr = NV_DATA_S(cvdls_mem->x);
+  double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
   cudaMemcpy(x_ptr,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
 */
 

@@ -32,6 +32,8 @@
 extern "C" {
 #endif
 
+//#include "itsolver_gpu.h"
+
 /*
  * =================================================================
  *   M A I N    I N T E G R A T O R    M E M O R Y    B L O C K
@@ -277,6 +279,9 @@ typedef struct CVodeMemRec {
   long int cv_nge;         /* counter for g evaluations                       */
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
+
+  void* bicg; //itsolver class (in C doesn't exist classes)
+  //itsolver bicg;
 
 #ifdef PMC_PROFILING
   int counterNewtonIt;

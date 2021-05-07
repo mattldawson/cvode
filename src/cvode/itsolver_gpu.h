@@ -12,11 +12,11 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-//#include<iostream>
-#include"libsolv.h"
 #include<cuda.h>
 #include<cuda_runtime.h>
 #include<cuda_runtime_api.h>
+//#include<iostream>
+#include"libsolv.h"
 
 //Move to proper classes instead of englobing all in a single file
 typedef struct
@@ -116,7 +116,6 @@ typedef struct
 #endif
 
 } itsolver;
-
 
 void createSolver(itsolver *bicg);
 void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv);

@@ -8,6 +8,12 @@ void createSolver(itsolver *bicg)
   bicg->maxIt=1000;
   bicg->tolmax=1e-12; //cv_mem->cv_reltol CAMP selected accuracy (1e-8) //1e-10;//1e-6
 
+  int device=0;//Select GPU
+  cudaDeviceProp prop;
+  cudaGetDeviceProperties(&prop, device);
+  bicg->threads=prop.maxThreadsPerBlock;
+  bicg->blocks=(bicg->nrows+bicg->threads-1)/bicg->threads;
+
   //Auxiliary vectors ("private")
   double ** dr0 = &bicg->dr0;
   double ** dr0h = &bicg->dr0h;
@@ -338,7 +344,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   double *dz = bicg->dz;
   double *daux = bicg->daux;
 
-#ifndef DEBUG_SOLVEBCGCUDA
+#ifdef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("solveGPUBlock\n");
   }
@@ -396,7 +402,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   int blocks = (nrows+threads_block-1)/threads_block;
 #endif
 
-#ifndef DEBUG_SOLVEBCGCUDA
+#ifdef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("size_cell %d nrows %d max_threads_block %d blocks %d threads_block %d n_shr_empty %d\n",
            size_cell,nrows,max_threads_block,blocks,threads_block,n_shr_empty);
@@ -436,7 +442,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   cudaMemcpy(&it,dit_ptr,sizeof(int),cudaMemcpyDeviceToHost);
   bicg->counterBiConjGradInternal += it;
 
-#ifndef DEBUG_SOLVEBCGCUDA
+#ifdef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("counterBiConjGradInternal %d\n",
            bicg->counterBiConjGradInternal);
@@ -487,7 +493,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
   double *aux = bicg->aux;
   double *daux = bicg->daux;
 
-#ifndef DEBUG_SOLVEBCGCUDA
+#ifdef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("solveGPU\n");
   }

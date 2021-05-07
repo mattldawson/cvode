@@ -6,7 +6,7 @@
  *
  */
 
-//#include<iostream>
+#include<iostream>
 #include<cuda.h>
 #include<cuda_runtime.h>
 #include<cuda_runtime_api.h>
@@ -14,53 +14,16 @@
 //#include "libsolv.h"
 
 //#include<cublas.h> //todo fix cublas not compiling fine
-//#include<cublas_v2.h>
+#include<cublas_v2.h>
 
 using namespace std;
 
 //
 //dAthreads
 //
-// Para reservar memoria Double e Int
-extern "C++" void cudaMallocDouble(double* &vector,int size)
-{
-	cudaMalloc((void**)&vector,size*sizeof(double));
-}
 
-extern "C++" void cudaMallocInt(int* &vector,int size)
-{
-	cudaMalloc((void**)&vector,size*sizeof(int));
-}
 
-// Para copiar a CPU->GPU Double e Int
-extern "C++" void cudaMemcpyDToGpu(double* h_vect,double* d_vect,int size )
-{
-  cudaMemcpy(d_vect,h_vect,size*sizeof(double),cudaMemcpyHostToDevice);
-}
-
-extern "C++" void cudaMemcpyIToGpu(int* h_vect,int* d_vect,int size )
-{
-		cudaMemcpy(d_vect,h_vect,size*sizeof(int),cudaMemcpyHostToDevice);
-}
-
-// Para copiar a GPU->CPU Double e Int
-extern "C++" void cudaMemcpyIToCpu(int* h_vect, int* d_vect,int size )
-{
-		cudaMemcpy(h_vect,d_vect,size*sizeof(int),cudaMemcpyDeviceToHost);
-}
-
-extern "C++" void cudaMemcpyDToCpu(double* h_vect, double* d_vect,int size )
-{
-  cudaMemcpy(h_vect,d_vect,size*sizeof(double),cudaMemcpyDeviceToHost);
-}
-
-// Para liberar memoria
-extern "C++" void cudaFreeMem(void* vector)
-{
-	cudaFree(vector);
-}
-
-extern "C++" void cudaGetLastErrorC(){
+void cudaGetLastErrorC(){
      cudaError_t error;
      error=cudaGetLastError();
      if(error!= cudaSuccess)
@@ -96,7 +59,7 @@ __global__ void cudamatScaleAddI(int nrows, double* dA, int* djA, int* diA, doub
 // djA : Matrix columns (nnz size)
 // diA : Matrix rows (nrows+1 size)
 // alpha : Scale factor
-extern "C++" void gpu_matScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha, int blocks, int threads)
+void gpu_matScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha, int blocks, int threads)
 {
 
    blocks = (nrows+threads-1)/threads;
@@ -127,7 +90,7 @@ __global__ void cudadiagprecond(int nrows, double* dA, int* djA, int* diA, doubl
 
 }
 
-extern "C++" void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, int blocks, int threads)
+void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, int blocks, int threads)
 {
 
   blocks = (nrows+threads-1)/threads;
@@ -147,7 +110,7 @@ __global__ void cudasetconst(double* dy,double constant,int nrows)
 	}
 }
 
-extern "C++" void gpu_yequalsconst(double *dy, double constant, int nrows, int blocks, int threads)
+void gpu_yequalsconst(double *dy, double constant, int nrows, int blocks, int threads)
 {
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
@@ -191,7 +154,7 @@ __global__ void cudaSpmvCSC(double* dx, double* db, int nrows, double* dA, int* 
 	}
 }
 
-extern "C++" void gpu_spmv(double* dx ,double* db, int nrows, double* dA, int *djA,int *diA,int mattype,int blocks,int  threads)
+void gpu_spmv(double* dx ,double* db, int nrows, double* dA, int *djA,int *diA,int mattype,int blocks,int  threads)
 {
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
@@ -216,7 +179,7 @@ __global__ void cudaaxpby(double* dy,double* dx, double a, double b, int nrows)
 	}
 }
 
-extern "C++" void gpu_axpby(double* dy ,double* dx, double a, double b, int nrows, int blocks, int threads)
+void gpu_axpby(double* dy ,double* dx, double a, double b, int nrows, int blocks, int threads)
 {
 
    dim3 dimGrid(blocks,1,1);
@@ -234,7 +197,7 @@ __global__ void cudayequalsx(double* dy,double* dx,int nrows)
 	}
 }
 
-extern "C++" void gpu_yequalsx(double *dy, double* dx, int nrows, int blocks, int threads)
+void gpu_yequalsx(double *dy, double* dx, int nrows, int blocks, int threads)
 {
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
@@ -292,7 +255,7 @@ __global__ void cudareducey(double *g_odata, unsigned int n)
 }
 
 //threads need to be pow of 2 //todo remove h_temp since not needed now
-extern "C++" double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int nrows, int blocks,int threads)
+double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int nrows, int blocks,int threads)
 {
   double sum;
   dim3 dimGrid(blocks,1,1);
@@ -334,7 +297,7 @@ extern "C++" double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double
 }
 
 /*
-extern "C++" double gpu_dotxy(double *dy, double* dx, int nrows)
+double gpu_dotxy(double *dy, double* dx, int nrows)
 {
    double dot=0.0;
    cublasHandle_t hl;
@@ -356,7 +319,7 @@ __global__ void cudazaxpbypc(double* dz, double* dx,double* dy, double a, double
 	}
 }
 
-extern "C++" void gpu_zaxpbypc(double* dz, double* dx ,double* dy, double a, double b, int nrows, int blocks, int threads)
+void gpu_zaxpbypc(double* dz, double* dx ,double* dy, double a, double b, int nrows, int blocks, int threads)
 {
 
    dim3 dimGrid(blocks,1,1);
@@ -374,7 +337,7 @@ __global__ void cudamultxy(double* dz, double* dx,double* dy, int nrows)
 	}
 }
 
-extern "C++" void gpu_multxy(double* dz, double* dx ,double* dy, int nrows, int blocks, int threads)
+void gpu_multxy(double* dz, double* dx ,double* dy, int nrows, int blocks, int threads)
 {
 
    dim3 dimGrid(blocks,1,1);
@@ -393,7 +356,7 @@ __global__ void cudazaxpby(double a, double* dx, double b, double* dy, double* d
 	}
 }
 
-extern "C++" void gpu_zaxpby(double a, double* dx, double b, double* dy, double* dz, int nrows, int blocks, int threads)
+void gpu_zaxpby(double a, double* dx, double b, double* dy, double* dz, int nrows, int blocks, int threads)
 {
 
    dim3 dimGrid(blocks,1,1);
@@ -411,7 +374,7 @@ __global__ void cudaaxpy(double* dy,double* dx, double a, int nrows)
 	}
 }
 
-extern "C++" void gpu_axpy(double* dy, double* dx ,double a, int nrows, int blocks, int threads)
+void gpu_axpy(double* dy, double* dx ,double a, int nrows, int blocks, int threads)
 {
 
    dim3 dimGrid(blocks,1,1);
@@ -446,7 +409,7 @@ __global__ void cudaDVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_od
   if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
-extern "C++" double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_temp, int blocks,int threads)
+double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_temp, int blocks,int threads)
 {
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
@@ -487,7 +450,7 @@ __global__ void cudascaley(double* dy, double a, int nrows)
   }
 }
 
-extern "C++" void gpu_scaley(double* dy, double a, int nrows, int blocks, int threads)
+void gpu_scaley(double* dy, double a, int nrows, int blocks, int threads)
 {
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
