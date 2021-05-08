@@ -86,6 +86,52 @@ void createSolver(itsolver *bicg)
 
    */
 
+#ifndef PMC_DEBUG_GPU
+  bicg->counterprecvStep=0;
+  bicg->counterNewtonIt=0;
+  bicg->counterLinSolSetup=0;
+  bicg->counterLinSolSolve=0;
+  bicg->countercvStep=0;
+  bicg->counterDerivNewton=0;
+  bicg->counterBiConjGrad=0;
+  bicg->counterBiConjGradInternal=0;
+  cudaMalloc((void**)&bicg->counterBiConjGradInternalGPU,sizeof(int));
+  bicg->counterDerivSolve=0;
+  bicg->counterJac=0;
+
+  printf("counterBiConjGrad %d\n", bicg->counterBiConjGrad);
+
+  int min_double=1.0e-30;
+
+  bicg->timeprecvStep=min_double;
+  bicg->timeNewtonIt=min_double;
+  bicg->timeLinSolSetup=min_double;
+  bicg->timeLinSolSolve=min_double;
+  bicg->timecvStep=min_double;
+  bicg->timeDerivNewton=min_double;
+  bicg->timeBiConjGrad=min_double;
+  bicg->timeDerivSolve=min_double;
+  bicg->timeJac=min_double;
+
+  cudaEventCreate(&bicg->startDerivNewton);
+  cudaEventCreate(&bicg->startDerivSolve);
+  cudaEventCreate(&bicg->startLinSolSetup);
+  cudaEventCreate(&bicg->startLinSolSolve);
+  cudaEventCreate(&bicg->startNewtonIt);
+  cudaEventCreate(&bicg->startcvStep);
+  cudaEventCreate(&bicg->startBiConjGrad);
+  cudaEventCreate(&bicg->startJac);
+
+  cudaEventCreate(&bicg->stopDerivNewton);
+  cudaEventCreate(&bicg->stopDerivSolve);
+  cudaEventCreate(&bicg->stopLinSolSetup);
+  cudaEventCreate(&bicg->stopLinSolSolve);
+  cudaEventCreate(&bicg->stopNewtonIt);
+  cudaEventCreate(&bicg->stopcvStep);
+  cudaEventCreate(&bicg->stopBiConjGrad);
+  cudaEventCreate(&bicg->stopJac);
+#endif
+
   printf("createSolver\n");
 
 }
@@ -124,7 +170,7 @@ void solveBcgCuda(
         ,double *dr0, double *dr0h, double *dn0, double *dp0
         ,double *dt, double *ds, double *dAx2, double *dy, double *dz
         ,double *daux // Auxiliary vectors
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
         ,int *it_pointer //debug
 #endif
         //,double *aux_params
@@ -180,7 +226,7 @@ void solveBcgCuda(
     //gpu_yequalsx(dr0h,dr0,nrows,blocks,threads);  //r0h=r0
     cudaDeviceyequalsx(dr0h,dr0,nrows);
 
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
     //int it=*it_pointer;
     int it=0;
 #else
@@ -347,7 +393,7 @@ void solveBcgCuda(
 
     //todo itpointer should be an array of n_blocks size, and in cpu reduce to max number
     // (since the max its supposed to be the last to exit)
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
     *it_pointer = it;
 #endif
 
@@ -468,7 +514,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   aux_params[6] = temp2;
   cudaMemcpy(daux_params, aux_params, n_aux_params * sizeof(double), cudaMemcpyHostToDevice);*/
 
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
   int it = 0;
   int *dit_ptr=bicg->counterBiConjGradInternalGPU;
   //int *dit_ptr;
@@ -481,13 +527,13 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
                                            //solveBcgCuda << < blocks, threads_block, threads_block * sizeof(double) >> >
                                            (dA, djA, diA, dx, dtempv, nrows, blocks, n_shr_empty, maxIt, mattype, n_cells
                                                    ,tolmax, ddiag, dr0, dr0h, dn0, dp0, dt, ds, dAx2, dy, dz, daux
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
                                                    ,dit_ptr
 #endif
                                                    //,daux_params
                                            );
 
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
   cudaMemcpy(&it,dit_ptr,sizeof(int),cudaMemcpyDeviceToHost);
   bicg->counterBiConjGradInternal += it;
 
@@ -516,8 +562,6 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   //cudaFreeMem(daux_params);
 
 }
-
-/*
 
 //Algorithm: Biconjugate gradient
 void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv)
@@ -669,7 +713,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     it++;
   }while(it<maxIt && temp1>tolmax);
 
-#ifdef PMC_DEBUG_GPU
+#ifndef PMC_DEBUG_GPU
   bicg->counterBiConjGradInternal += it;
 #endif
 
@@ -709,7 +753,7 @@ void free_itsolver(itsolver *bicg)
 
 }
 
- */
+
 
 #endif
 
