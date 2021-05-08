@@ -17,12 +17,14 @@
 #include<cuda_runtime_api.h>
 //#include<iostream>
 
-#include "cuda_structs.h"
+
 #include"libsolv.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "cuda_structs.h"
 
 //#include"libsolv.h"
 

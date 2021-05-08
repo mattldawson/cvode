@@ -5,6 +5,14 @@
 #ifndef CAMPGPU_CUDA_STRUCTS_H
 #define CAMPGPU_CUDA_STRUCTS_H
 
+#include<cuda.h>
+#include<cuda_runtime.h>
+#include<cuda_runtime_api.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //Move to proper classes instead of englobing all in a single file
 typedef struct
 {
@@ -104,5 +112,8 @@ typedef struct
 
 } itsolver;
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif //CAMPGPU_CUDA_STRUCTS_H

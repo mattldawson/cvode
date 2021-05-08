@@ -70,17 +70,25 @@
 
 void alloc_solver_gpu_cvode(void *cvode_mem)
 {
-  //itsolver *bicg = (itsolver *)cv_mem->bicg;
   
   printf("Finished alloc_solver_gpu\n");
 
     //Solver variables
   CVodeMem cv_mem = (CVodeMem) cvode_mem;
+
+#ifdef COMMENT
+
   //itsolver *bicg = &(cv_mem->bicg);
   itsolver bicg_object;// = (itsolver *)cv_mem->bicg;
   itsolver *bicg_aux = &bicg_object;
   cv_mem->bicg = bicg_aux;
   itsolver *bicg = (itsolver *)cv_mem->bicg;
+
+#else
+
+  itsolver *bicg = &cv_mem->bicg;
+
+#endif
 
   CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
   SUNMatrix J = cvdls_mem->A;
@@ -112,6 +120,23 @@ void alloc_solver_gpu_cvode(void *cvode_mem)
   //test_print2();
 
   printf("Finished alloc_solver_gpu\n");
+
+}
+
+void print_counterBiConjGrad(CVodeMem cv_mem)
+{
+
+#ifdef COMMENT
+
+  itsolver *bicg = (itsolver *)cv_mem->bicg;
+
+#else
+
+  itsolver *bicg = &cv_mem->bicg;
+
+#endif
+
+  printf("counterBiConjGrad2 %d\n", bicg->counterBiConjGrad);
 
 }
 
@@ -209,6 +234,7 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS,
 #ifdef PMC_USE_GPU
   //printf("alloc_solver_gpu\n");
   alloc_solver_gpu_cvode(cv_mem);
+  print_counterBiConjGrad(cv_mem);
 #endif
 
   //printf("CVDlsSetLinearSolver\n");
@@ -858,7 +884,15 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 
 #ifdef PMC_USE_GPU
 
+#ifdef COMMENT
+
   itsolver *bicg = (itsolver *)cv_mem->bicg;
+
+#else
+
+  itsolver *bicg = &cv_mem->bicg;
+
+#endif
 
  /*
   cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);

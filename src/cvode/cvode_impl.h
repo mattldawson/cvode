@@ -30,10 +30,16 @@
 
 //#include "itsolver_gpu.h"
 
-//#include "cuda_structs.h"
+
 
 #ifdef __cplusplus  /* wrapper to enable C++ usage */
 extern "C" {
+#endif
+
+#ifdef COMMENT
+#else
+#include "cuda_structs.h"
+//#include "itsolver_gpu.h"
 #endif
 
 #ifdef PMC_USE_GPU
@@ -287,8 +293,11 @@ typedef struct CVodeMemRec {
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
+#ifdef COMMENT
   void* bicg; //itsolver class (in C doesn't exist classes)
-  //itsolver *bicg;
+#else
+  itsolver bicg;
+#endif
 
 #ifdef PMC_PROFILING
   int counterNewtonIt;

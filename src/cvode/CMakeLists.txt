@@ -171,6 +171,7 @@ INSTALL(FILES cvode_impl.h DESTINATION include/cvode)
 INSTALL(FILES cvode_direct_impl.h DESTINATION include/cvode)
 
 #INSTALL(FILES itsolver_gpu.h DESTINATION include/cvode)
+#INSTALL(FILES cuda_structs.h DESTINATION include/cvode)
 
 #
 MESSAGE(STATUS "Added CVODE module")
