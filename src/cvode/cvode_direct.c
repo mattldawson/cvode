@@ -36,8 +36,14 @@
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 
-#ifndef CUDA_ENABLE
+//#include "test_cpu.h"
+
 #include "itsolver_gpu.h"
+
+#include "libsolv.h"
+
+#ifdef PMC_USE_GPU
+
 #endif
 
 #ifdef PMC_PROFILING
@@ -61,80 +67,48 @@
   EXPORTED FUNCTIONS -- REQUIRED
   =================================================================*/
 
-#ifndef CUDA_ENABLE
+#ifdef PMC_USE_GPU
 
-void alloc_solver_gpu(CVodeMem cv_mem)
+void alloc_solver_gpu_cvode(void *cvode_mem)
 {
-  itsolver *bicg = (itsolver *)cv_mem->bicg;
-  //itsolver *bicg = &(cv_mem->bicg);
+  //itsolver *bicg = (itsolver *)cv_mem->bicg;
+  
   printf("Finished alloc_solver_gpu\n");
+
+    //Solver variables
+  CVodeMem cv_mem = (CVodeMem) cvode_mem;
+  //itsolver *bicg = &(cv_mem->bicg);
+  itsolver bicg_object;// = (itsolver *)cv_mem->bicg;
+  itsolver *bicg_aux = &bicg_object;
+  cv_mem->bicg = bicg_aux;
+  itsolver *bicg = (itsolver *)cv_mem->bicg;
+
   CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
   SUNMatrix J = cvdls_mem->A;
 
-  printf("Finished alloc_solver_gpu\n");
-
-  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
-  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
-
   //Init GPU ODE solver variables
   //Linking Matrix data, later this data must be allocated in GPU
+  //bicg->n_cells=1;//md->n_cells;
+
   bicg->n_cells=1;//md->n_cells;
+
   bicg->nnz=SM_NNZ_S(J);
   bicg->nrows=SM_NP_S(J);
-  bicg->mattype=1; //CSC
+  //printf("Finished alloc_solver_gpu\n");
   bicg->A=(double*)SM_DATA_S(J);
 
-  printf("Finished alloc_solver_gpu\n");
-
-  //ModelDataGPU *mGPU = &sd->mGPU;
-  //bicg->dA=mGPU->J;//set itsolver gpu pointer to jac pointer initialized at camp
-  cudaMalloc((void**)&bicg->dA,bicg->nnz*sizeof(int));
-  //cudaMemcpy(bicg->A, bicg->dA, bicg->nnz*sizeof(double), cudaMemcpyDeviceToHost);
-  //bicg->dftemp=mGPU->deriv_data; //deriv is gpu pointer
-  cudaMalloc((void**)&bicg->dftemp,bicg->nrows*sizeof(double));
-
-  //Using int per default as sundindextype give wrong results in CPU, so translate from int64 to int
+  //Using int per default as sundindextype gives wrong results in CPU, so translate from int64 to int
   bicg->jA=(int*)malloc(sizeof(int)*SM_NNZ_S(J));
   bicg->iA=(int*)malloc(sizeof(int)*(SM_NP_S(J)+1));
   for(int i=0;i<SM_NNZ_S(J);i++)
     bicg->jA[i]=SM_INDEXVALS_S(J)[i];
   for(int i=0;i<=SM_NP_S(J);i++)
     bicg->iA[i]=SM_INDEXPTRS_S(J)[i];
-  //bicg->jA=(int*)SM_INDEXVALS_S(J);
-  //bicg->iA=(int*)SM_INDEXPTRS_S(J);
-
-  //move
-  //int device=0;//Selected GPU
-  //cudaDeviceProp prop;
-  //cudaGetDeviceProperties(&prop, device);
-  //bicg->threads=prop.maxThreadsPerBlock;//1024; //128 set at max gpu
-  //bicg->threads=1024;
-  //printf("bicg->threads %d \n", bicg->threads);
-  //bicg->blocks=(bicg->nrows+bicg->threads-1)/bicg->threads;
-
-  // Allocating matrix data to the GPU
-  cudaMalloc((void**)&bicg->djA,bicg->nnz*sizeof(int));
-  cudaMalloc((void**)&bicg->diA,(bicg->nrows+1)*sizeof(int));
-
-  //ODE aux variables
-  cudaMalloc((void**)&bicg->dewt,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dacor,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dtempv,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dzn,bicg->nrows*(cv_mem->cv_qmax+1)*sizeof(double));
-
-  //ODE concs arrays
-  cudaMalloc((void**)&bicg->dcv_y,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dx,bicg->nrows*sizeof(double));
-
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dewt,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dacor,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dftemp,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
 
   //Init Linear Solver variables
-  //createSolver(bicg);
+  createSolver(bicg);
+
+  //test_print2();
 
   printf("Finished alloc_solver_gpu\n");
 
@@ -273,12 +247,12 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS,
   /* Attach linear solver memory to integrator memory */
   cv_mem->cv_lmem = cvdls_mem;
 
-#ifndef CUDA_ENABLE
-  printf("alloc_solver_gpu\n");
-  alloc_solver_gpu(cv_mem);
+#ifdef PMC_USE_GPU
+  //printf("alloc_solver_gpu\n");
+  alloc_solver_gpu_cvode(cv_mem);
 #endif
 
-  printf("CVDlsSetLinearSolver\n");
+  //printf("CVDlsSetLinearSolver\n");
 
   return(CVDLS_SUCCESS);
 }
@@ -856,19 +830,20 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef __cplusplus
+#ifdef PMC_USE_GPU
 
 #ifdef PMC_PROFILING
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-/*
+  itsolver *bicg = (itsolver *)cv_mem->bicg;
+
   cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
 
   gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
-*/
+
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
@@ -922,7 +897,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
-#ifdef __cplusplus
+#ifdef PMC_USE_GPU
 
 #ifdef PMC_PROFILING
   double startKLUSparseSolve = MPI_Wtime();

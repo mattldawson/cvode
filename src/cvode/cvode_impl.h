@@ -28,11 +28,18 @@
 #include <stdarg.h>
 #include <cvode/cvode.h>
 
+//#include "itsolver_gpu.h"
+
+//#include "cuda_structs.h"
+
 #ifdef __cplusplus  /* wrapper to enable C++ usage */
 extern "C" {
 #endif
 
-//#include "itsolver_gpu.h"
+#ifdef PMC_USE_GPU
+
+#endif
+
 
 /*
  * =================================================================
@@ -281,7 +288,7 @@ typedef struct CVodeMemRec {
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
   void* bicg; //itsolver class (in C doesn't exist classes)
-  //itsolver bicg;
+  //itsolver *bicg;
 
 #ifdef PMC_PROFILING
   int counterNewtonIt;

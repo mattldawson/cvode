@@ -31,11 +31,13 @@ SET(cvode_SOURCES
   cvode_io.c
   cvode_spils.c
   #cvode_gpu.cu
+  #test_cpu.c
   )
 
 if (CUDA_FOUND)
 SET(cuda_SOURCES
 	#cvode_gpu.cu
+  #test_cpu.c
   itsolver_gpu.cu
   libsolv.cu
 )
@@ -46,10 +48,9 @@ endif()
 
 set(STD_CUDA_FLAGS "-arch=compute_70 -code=sm_70 -dc --compiler-options '-fPIC' -lcusolver -lcudart -lcudadevrt -lcublas -lcusparse_static -lculibos -lpthread -ldl")
 
-set_source_files_properties(${cuda_SOURCES} PROPERTIES COMPILE_FLAGS
-        ${STD_CUDA_FLAGS})
+set_source_files_properties(${cuda_SOURCES} PROPERTIES COMPILE_FLAGS ${STD_CUDA_FLAGS})
 set_source_files_properties(${cuda_SOURCES} PROPERTIES LANGUAGE CUDA)
-set_source_files_properties(${cuda_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
+#set_source_files_properties(${cuda_SOURCES} PROPERTIES CUDA_SOURCE_PROPERTY_FORMAT OBJ)
 
 # Add variable shared_SOURCES with the common SUNDIALS sources which will
 # also be included in the CVODE library
@@ -124,8 +125,8 @@ ${cuda_SOURCES})
   SET_TARGET_PROPERTIES(sundials_cvode_static
     PROPERTIES OUTPUT_NAME sundials_cvode CLEAN_DIRECT_OUTPUT 1)
 
-  set_target_properties(sundials_cvode_static PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  #set_target_properties(sundials_cvode_static PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  #set_target_properties(sundials_cvode_static PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(sundials_cvode_static PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Install the CVODE library
   INSTALL(TARGETS sundials_cvode_static DESTINATION lib)
@@ -152,8 +153,8 @@ ${cuda_SOURCES})
   SET_TARGET_PROPERTIES(sundials_cvode_shared
     PROPERTIES VERSION ${cvodelib_VERSION} SOVERSION ${cvodelib_SOVERSION})
 
-  set_target_properties(sundials_cvode_shared PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  #set_target_properties(sundials_cvode_shared PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  #set_target_properties(sundials_cvode_shared PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  set_target_properties(sundials_cvode_shared PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Install the CVODE library
   INSTALL(TARGETS sundials_cvode_shared DESTINATION lib)
@@ -168,6 +169,8 @@ INSTALL(FILES cvode_impl.h DESTINATION include/cvode)
 
 # Install the CVODE direct implementation header file
 INSTALL(FILES cvode_direct_impl.h DESTINATION include/cvode)
+
+#INSTALL(FILES itsolver_gpu.h DESTINATION include/cvode)
 
 #
 MESSAGE(STATUS "Added CVODE module")

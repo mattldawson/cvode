@@ -1,10 +1,17 @@
 #include "itsolver_gpu.h"
+#include "cuda_structs.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 void createSolver(itsolver *bicg)
 {
+
+  printf("createSolver\n");
+
   //Init variables ("public")
-  int nrows = bicg->nrows;
-  int blocks = bicg->blocks;
+  bicg->mattype=1; //CSC
   bicg->maxIt=1000;
   bicg->tolmax=1e-12; //cv_mem->cv_reltol CAMP selected accuracy (1e-8) //1e-10;//1e-6
 
@@ -28,6 +35,8 @@ void createSolver(itsolver *bicg)
   double ** ddiag = &bicg->ddiag;
 
   //Allocate
+  int nrows = bicg->nrows;
+  int blocks = bicg->blocks;
   cudaMalloc(dr0,nrows*sizeof(double));
   cudaMalloc(dr0h,nrows*sizeof(double));
   cudaMalloc(dn0,nrows*sizeof(double));
@@ -41,7 +50,47 @@ void createSolver(itsolver *bicg)
   cudaMalloc(daux,nrows*sizeof(double));
   bicg->aux=(double*)malloc(sizeof(double)*blocks);
 
+  // Allocating matrix data to the GPU
+  //ModelDataGPU *mGPU = &sd->mGPU;
+  //bicg->dA=mGPU->J;//set itsolver gpu pointer to jac pointer initialized at camp
+  cudaMalloc((void**)&bicg->dA,bicg->nnz*sizeof(int));
+  //cudaMemcpy(bicg->A, bicg->dA, bicg->nnz*sizeof(double), cudaMemcpyDeviceToHost);
+  //bicg->dftemp=mGPU->deriv_data; //deriv is gpu pointer
+
+  cudaMalloc((void**)&bicg->djA,bicg->nnz*sizeof(int));
+  cudaMalloc((void**)&bicg->diA,(bicg->nrows+1)*sizeof(int));
+
+  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
+
+  //ODE concs arrays
+  cudaMalloc((void**)&bicg->dcv_y,bicg->nrows*sizeof(double));
+  cudaMalloc((void**)&bicg->dx,bicg->nrows*sizeof(double));
+
+  cudaMalloc((void**)&bicg->dftemp,bicg->nrows*sizeof(double));
+  cudaMalloc((void**)&bicg->dewt,bicg->nrows*sizeof(double));
+  cudaMalloc((void**)&bicg->dacor,bicg->nrows*sizeof(double));
+  cudaMalloc((void**)&bicg->dtempv,bicg->nrows*sizeof(double));
+
+  /*
+  //ODE aux variables
+
+  cudaMalloc((void**)&bicg->dzn,bicg->nrows*(cv_mem->cv_qmax+1)*sizeof(double));
+  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
+  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
+
+  cudaMemcpy(bicg->dewt,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dacor,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dftemp,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
+
+   */
+
+  printf("createSolver\n");
+
 }
+
+#ifndef COMMENT
 
 int nextPowerOfTwo(int v){
 
@@ -157,7 +206,7 @@ void solveBcgCuda(
 
 #ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
-    if(i==0){
+      if(i==0){
       //printf("%d dr0[%d] %-le\n",it,i,dr0[i]);
       printf("%d %d rho1 %-le\n",it,i,rho1);
     }
@@ -288,9 +337,9 @@ void solveBcgCuda(
       temp1 = sqrt(temp1);
 
       rho0 = rho1;
-  /**/
+      /**/
       __syncthreads();
-  /**/
+      /**/
 
       //if (tid==0) it++;
       it++;
@@ -299,7 +348,7 @@ void solveBcgCuda(
     //todo itpointer should be an array of n_blocks size, and in cpu reduce to max number
     // (since the max its supposed to be the last to exit)
 #ifdef PMC_DEBUG_GPU
-   *it_pointer = it;
+    *it_pointer = it;
 #endif
 
   }
@@ -429,14 +478,14 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 
   solveBcgCuda << < blocks, threads_block, max_threads_block * sizeof(double) >> >
-  //solveBcgCuda << < blocks, threads_block, threads_block * sizeof(double) >> >
-          (dA, djA, diA, dx, dtempv, nrows, blocks, n_shr_empty, maxIt, mattype, n_cells
-          ,tolmax, ddiag, dr0, dr0h, dn0, dp0, dt, ds, dAx2, dy, dz, daux
+                                           //solveBcgCuda << < blocks, threads_block, threads_block * sizeof(double) >> >
+                                           (dA, djA, diA, dx, dtempv, nrows, blocks, n_shr_empty, maxIt, mattype, n_cells
+                                                   ,tolmax, ddiag, dr0, dr0h, dn0, dp0, dt, ds, dAx2, dy, dz, daux
 #ifdef PMC_DEBUG_GPU
-          ,dit_ptr
+                                                   ,dit_ptr
 #endif
-          //,daux_params
-          );
+                                                   //,daux_params
+                                           );
 
 #ifdef PMC_DEBUG_GPU
   cudaMemcpy(&it,dit_ptr,sizeof(int),cudaMemcpyDeviceToHost);
@@ -467,6 +516,8 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   //cudaFreeMem(daux_params);
 
 }
+
+/*
 
 //Algorithm: Biconjugate gradient
 void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv)
@@ -608,7 +659,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     //temp1=gpu_dotxy(dr0, dr0, aux, daux, nrows,blocks, threads);
     temp1=sqrt(temp1);
 
-  //cout<<it<<": "<<temp1<<endl;
+    //cout<<it<<": "<<temp1<<endl;
 
     rho0=rho1;
 
@@ -658,11 +709,22 @@ void free_itsolver(itsolver *bicg)
 
 }
 
- /*
+ */
+
+#endif
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+/*
 void setUpSolver(itsolver *bicg, double reltol, double *ewt, int tnrows,int tnnz,double *tA, int *tjA, int *tiA, int tmattype, int qmax, double *dACamp, double *dftempCamp);
 {
 
-  bicg.tolmax=reltol;
+ bicg.tolmax=reltol;
 
 }
 */
+

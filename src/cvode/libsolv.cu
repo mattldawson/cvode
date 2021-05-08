@@ -11,17 +11,12 @@
 #include<cuda_runtime.h>
 #include<cuda_runtime_api.h>
 
-//#include "libsolv.h"
+#include "libsolv.h"
 
 //#include<cublas.h> //todo fix cublas not compiling fine
-#include<cublas_v2.h>
+//#include<cublas_v2.h>
 
 using namespace std;
-
-//
-//dAthreads
-//
-
 
 void cudaGetLastErrorC(){
      cudaError_t error;
@@ -94,6 +89,8 @@ void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, i
 {
 
   blocks = (nrows+threads-1)/threads;
+
+  printf("gpu_diagprecond\n");
 
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
