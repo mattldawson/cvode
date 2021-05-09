@@ -125,8 +125,8 @@ ${cuda_SOURCES})
   SET_TARGET_PROPERTIES(sundials_cvode_static
     PROPERTIES OUTPUT_NAME sundials_cvode CLEAN_DIRECT_OUTPUT 1)
 
-  #set_target_properties(sundials_cvode_static PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  set_target_properties(sundials_cvode_static PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(sundials_cvode_static PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  #set_target_properties(sundials_cvode_static PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Install the CVODE library
   INSTALL(TARGETS sundials_cvode_static DESTINATION lib)
@@ -153,8 +153,8 @@ ${cuda_SOURCES})
   SET_TARGET_PROPERTIES(sundials_cvode_shared
     PROPERTIES VERSION ${cvodelib_VERSION} SOVERSION ${cvodelib_SOVERSION})
 
-  #set_target_properties(sundials_cvode_shared PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-  set_target_properties(sundials_cvode_shared PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  set_target_properties(sundials_cvode_shared PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
+  #set_target_properties(sundials_cvode_shared PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # Install the CVODE library
   INSTALL(TARGETS sundials_cvode_shared DESTINATION lib)

@@ -16,6 +16,18 @@
 //#include<cublas.h> //todo fix cublas not compiling fine
 //#include<cublas_v2.h>
 
+#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
+
+static void HandleError(cudaError_t err,
+                        const char *file,
+                        int line) {
+  if (err != cudaSuccess) {
+    printf("%s in %s at line %d\n", cudaGetErrorString(err),
+           file, line);
+    exit(EXIT_FAILURE);
+  }
+}
+
 using namespace std;
 
 void cudaGetLastErrorC(){
@@ -65,10 +77,31 @@ void gpu_matScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha, i
   cudamatScaleAddI<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, alpha);
 }
 
+__global__
+void check_input_gpud(double *x, int len, int var_id)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+
+  printf("%d[%d]=%-le\n",var_id,i,x[i]);
+
+}
+
+__device__ void cudadiagprecondd(){
+  int row= threadIdx.x + blockDim.x*blockIdx.x;
+  if(row==0)
+    printf("AQUI SI %d\n",row);
+}
+
 // Diagonal precond
+//todo same name not works, like some conflict happens
 __global__ void cudadiagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
+  cudadiagprecondd();
+  if(row==0)
+    printf("cudadiagprecond %d\n",row);
+  //printf("HOLA \n");
+  /*
   if(row < nrows){
     int jstart=diA[row];
     int jend  =diA[row+1];
@@ -79,9 +112,27 @@ __global__ void cudadiagprecond(int nrows, double* dA, int* djA, int* diA, doubl
         else{
           ddiag[row]= 1.0;
         }
+        printf("[%d]=%-le\n",row,ddiag[row]);
       }
     }
   }
+*/
+
+}
+
+__global__ void cudadiagprecond0(int nrows, double* dA, int* djA, double* ddiag)
+{
+  int row= threadIdx.x + blockDim.x*blockIdx.x;
+  if(row==0)
+    printf("HOLA0 %d\n",row);
+
+}
+
+__global__ void cudadiagprecond1(int nrows, double* dA, int* djA, int* diA, double* ddiag)
+{
+  int row= threadIdx.x + blockDim.x*blockIdx.x;
+  if(row==0)
+    printf("HOLA1 %d\n",row);
 
 }
 
@@ -93,7 +144,17 @@ void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, i
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
 
+  //printf("HOLA0 %d %d %d\n",blocks,threads,nrows);
+  //cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  cudadiagprecond0<<<dimGrid,dimBlock>>>(nrows, dA, djA, ddiag);
+  cudadiagprecond1<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  printf("HOLA1 \n");
   cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  cudaGetLastErrorC();
+  //HANDLE_ERROR(cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
+  //cudaGetLastErrorC(cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
+  //printf("HOLA1 \n");
+  //check_input_gpud<< < 1, 5>> >(ddiag,nrows,0);
 }
 
 // y = constant
