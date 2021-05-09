@@ -30,7 +30,7 @@ static void HandleError(cudaError_t err,
 
 using namespace std;
 
-void cudaGetLastErrorC(){
+void cvcudaGetLastErrorC(){
      cudaError_t error;
      error=cudaGetLastError();
      if(error!= cudaSuccess)
@@ -40,7 +40,7 @@ void cudaGetLastErrorC(){
      }
 }
 
-__global__ void cudamatScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha)
+__global__ void cvcudamatScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row < nrows)
@@ -74,7 +74,7 @@ void gpu_matScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha, i
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-  cudamatScaleAddI<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, alpha);
+  cvcudamatScaleAddI<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, alpha);
 }
 
 __global__
@@ -86,7 +86,7 @@ void check_input_gpud(double *x, int len, int var_id)
 
 }
 
-__device__ void cudadiagprecondd(){
+__device__ void cvcudadiagprecondd(){
   int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row==0)
     printf("AQUI SI %d\n",row);
@@ -94,12 +94,12 @@ __device__ void cudadiagprecondd(){
 
 // Diagonal precond
 //todo same name not works, like some conflict happens
-__global__ void cudadiagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag)
+__global__ void cvcudadiagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
-  cudadiagprecondd();
+  cvcudadiagprecondd();
   if(row==0)
-    printf("cudadiagprecond %d\n",row);
+    printf("cvcudadiagprecond %d\n",row);
   //printf("HOLA \n");
   /*
   if(row < nrows){
@@ -120,7 +120,7 @@ __global__ void cudadiagprecond(int nrows, double* dA, int* djA, int* diA, doubl
 
 }
 
-__global__ void cudadiagprecond0(int nrows, double* dA, int* djA, double* ddiag)
+__global__ void cvcudadiagprecond0(int nrows, double* dA, int* djA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row==0)
@@ -128,7 +128,7 @@ __global__ void cudadiagprecond0(int nrows, double* dA, int* djA, double* ddiag)
 
 }
 
-__global__ void cudadiagprecond1(int nrows, double* dA, int* djA, int* diA, double* ddiag)
+__global__ void cvcudadiagprecond1(int nrows, double* dA, int* djA, int* diA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row==0)
@@ -145,20 +145,20 @@ void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, i
   dim3 dimBlock(threads,1,1);
 
   //printf("HOLA0 %d %d %d\n",blocks,threads,nrows);
-  //cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
-  cudadiagprecond0<<<dimGrid,dimBlock>>>(nrows, dA, djA, ddiag);
-  cudadiagprecond1<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  //cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  cvcudadiagprecond0<<<dimGrid,dimBlock>>>(nrows, dA, djA, ddiag);
+  cvcudadiagprecond1<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
   printf("HOLA1 \n");
-  cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
-  cudaGetLastErrorC();
-  //HANDLE_ERROR(cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
-  //cudaGetLastErrorC(cudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
+  cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
+  cvcudaGetLastErrorC();
+  //HANDLE_ERROR(cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
+  //cvcudaGetLastErrorC(cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
   //printf("HOLA1 \n");
   //check_input_gpud<< < 1, 5>> >(ddiag,nrows,0);
 }
 
 // y = constant
-__global__ void cudasetconst(double* dy,double constant,int nrows)
+__global__ void cvcudasetconst(double* dy,double constant,int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -171,13 +171,13 @@ void gpu_yequalsconst(double *dy, double constant, int nrows, int blocks, int th
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudasetconst<<<dimGrid,dimBlock>>>(dy,constant,nrows);
+   cvcudasetconst<<<dimGrid,dimBlock>>>(dy,constant,nrows);
 
 }
 
 
 // x=A*b
-__global__ void cudaSpmvCSR(double* dx, double* db, int nrows, double* dA, int* djA, int* diA)
+__global__ void cvcudaSpmvCSR(double* dx, double* db, int nrows, double* dA, int* djA, int* diA)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row < nrows)
@@ -194,7 +194,7 @@ __global__ void cudaSpmvCSR(double* dx, double* db, int nrows, double* dA, int* 
 
 }
 
-__global__ void cudaSpmvCSC(double* dx, double* db, int nrows, double* dA, int* djA, int* diA)
+__global__ void cvcudaSpmvCSC(double* dx, double* db, int nrows, double* dA, int* djA, int* diA)
 {
 	double mult;
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
@@ -217,17 +217,17 @@ void gpu_spmv(double* dx ,double* db, int nrows, double* dA, int *djA,int *diA,i
 
    if(mattype==0)
    {
-     cudaSpmvCSR<<<dimGrid,dimBlock>>>(dx, db, nrows, dA, djA, diA);
+     cvcudaSpmvCSR<<<dimGrid,dimBlock>>>(dx, db, nrows, dA, djA, diA);
    }
    else
    {
-	    cudasetconst<<<dimGrid,dimBlock>>>(dx, 0.0, nrows);
-	    cudaSpmvCSC<<<dimGrid,dimBlock>>>(dx, db, nrows, dA, djA, diA);
+	    cvcudasetconst<<<dimGrid,dimBlock>>>(dx, 0.0, nrows);
+	    cvcudaSpmvCSC<<<dimGrid,dimBlock>>>(dx, db, nrows, dA, djA, diA);
    }
 }
 
 // y= a*x+ b*y
-__global__ void cudaaxpby(double* dy,double* dx, double a, double b, int nrows)
+__global__ void cvcudaaxpby(double* dy,double* dx, double a, double b, int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -241,11 +241,11 @@ void gpu_axpby(double* dy ,double* dx, double a, double b, int nrows, int blocks
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudaaxpby<<<dimGrid,dimBlock>>>(dy,dx,a,b,nrows);
+   cvcudaaxpby<<<dimGrid,dimBlock>>>(dy,dx,a,b,nrows);
 }
 
 // y = x
-__global__ void cudayequalsx(double* dy,double* dx,int nrows)
+__global__ void cvcudayequalsx(double* dy,double* dx,int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -258,11 +258,11 @@ void gpu_yequalsx(double *dy, double* dx, int nrows, int blocks, int threads)
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudayequalsx<<<dimGrid,dimBlock>>>(dy,dx,nrows);
+   cvcudayequalsx<<<dimGrid,dimBlock>>>(dy,dx,nrows);
 
 }
 
-__global__ void cudadotxy(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
+__global__ void cvcudadotxy(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
 {
   extern __shared__ double sdata[];
   unsigned int tid = threadIdx.x;
@@ -289,7 +289,7 @@ __global__ void cudadotxy(double *g_idata1, double *g_idata2, double *g_odata, u
   if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
-__global__ void cudareducey(double *g_odata, unsigned int n)
+__global__ void cvcudareducey(double *g_odata, unsigned int n)
 {
   extern __shared__ double sdata[];
   unsigned int tid = threadIdx.x;
@@ -318,7 +318,7 @@ double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int
   dim3 dimBlock(threads,1,1);
 
   //threads*sizeof(double)
-  cudadotxy<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,nrows);
+  cvcudadotxy<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,nrows);
   cudaMemcpy(&sum, d_temp, sizeof(double), cudaMemcpyDeviceToHost);
   //printf("rho1 %f", sum);
 
@@ -328,7 +328,7 @@ double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int
   dim3 dimGrid2(1,1,1);
   dim3 dimBlock2(redsize,1,1);
 
-  cudareducey<<<dimGrid2,dimBlock2,redsize*sizeof(double)>>>(d_temp,blocks);
+  cvcudareducey<<<dimGrid2,dimBlock2,redsize*sizeof(double)>>>(d_temp,blocks);
   cudaMemcpy(&sum, d_temp, sizeof(double), cudaMemcpyDeviceToHost);
 
   return sum;
@@ -345,8 +345,8 @@ double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int
   /*dim3 dimGrid2(1,1,1);
   dim3 dimBlock2(blocks,1,1);
 
-  //Cuda only sum kernel call
-  //cudareducey<<<dimGrid2,dimBlock2,blocks*sizeof(double)>>>(d_temp,blocks); //Takes quasi WAY MORE than cpu calc
+  //cvcuda only sum kernel call
+  //cvcudareducey<<<dimGrid2,dimBlock2,blocks*sizeof(double)>>>(d_temp,blocks); //Takes quasi WAY MORE than cpu calc
 
   cudaMemcpy(h_temp, d_temp, sizeof(double), cudaMemcpyDeviceToHost);
   return h_temp[0];*/
@@ -367,7 +367,7 @@ double gpu_dotxy(double *dy, double* dx, int nrows)
 */
 
 // z= a*z + x + b*y
-__global__ void cudazaxpbypc(double* dz, double* dx,double* dy, double a, double b, int nrows)
+__global__ void cvcudazaxpbypc(double* dz, double* dx,double* dy, double a, double b, int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -381,11 +381,11 @@ void gpu_zaxpbypc(double* dz, double* dx ,double* dy, double a, double b, int nr
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudazaxpbypc<<<dimGrid,dimBlock>>>(dz,dx,dy,a,b,nrows);
+   cvcudazaxpbypc<<<dimGrid,dimBlock>>>(dz,dx,dy,a,b,nrows);
 }
 
 // z= x*y
-__global__ void cudamultxy(double* dz, double* dx,double* dy, int nrows)
+__global__ void cvcudamultxy(double* dz, double* dx,double* dy, int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -399,12 +399,12 @@ void gpu_multxy(double* dz, double* dx ,double* dy, int nrows, int blocks, int t
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudamultxy<<<dimGrid,dimBlock>>>(dz,dx,dy,nrows);
+   cvcudamultxy<<<dimGrid,dimBlock>>>(dz,dx,dy,nrows);
 }
 
 // z= a*x + b*y
-//__global__ void cudazaxpby(double* dz, double* dx,double* dy, double a, double b, int nrows)
-__global__ void cudazaxpby(double a, double* dx, double b, double* dy, double* dz, int nrows)
+//__global__ void cvcudazaxpby(double* dz, double* dx,double* dy, double a, double b, int nrows)
+__global__ void cvcudazaxpby(double a, double* dx, double b, double* dy, double* dz, int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -418,11 +418,11 @@ void gpu_zaxpby(double a, double* dx, double b, double* dy, double* dz, int nrow
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-  cudazaxpby<<<dimGrid,dimBlock>>>(a,dx,b,dy,dz,nrows);
+  cvcudazaxpby<<<dimGrid,dimBlock>>>(a,dx,b,dy,dz,nrows);
 }
 
 // y= a*x + y
-__global__ void cudaaxpy(double* dy,double* dx, double a, int nrows)
+__global__ void cvcudaaxpy(double* dy,double* dx, double a, int nrows)
 {
 	int row= threadIdx.x + blockDim.x*blockIdx.x;
    	if(row < nrows){
@@ -436,11 +436,11 @@ void gpu_axpy(double* dy, double* dx ,double a, int nrows, int blocks, int threa
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);
 
-   cudaaxpy<<<dimGrid,dimBlock>>>(dy,dx,a,nrows);
+   cvcudaaxpy<<<dimGrid,dimBlock>>>(dy,dx,a,nrows);
 }
 
 // sqrt(sum ( (x_i*y_i)^2)/n)
-__global__ void cudaDVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
+__global__ void cvcudaDVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
 {
   extern __shared__ double sdata[];
   unsigned int tid = threadIdx.x;
@@ -470,7 +470,7 @@ double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
 
-  cudaDVWRMS_Norm<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,n);
+  cvcudaDVWRMS_Norm<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,n);
 
   //cudaMemcpy(h_temp, d_temp, blocks * sizeof(double), cudaMemcpyDeviceToHost);
 
@@ -480,7 +480,7 @@ double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_
   dim3 dimGrid2(1,1,1);
   dim3 dimBlock2(redsize,1,1);
 
-  cudareducey<<<dimGrid2,dimBlock2,redsize*sizeof(double)>>>(d_temp,blocks);
+  cvcudareducey<<<dimGrid2,dimBlock2,redsize*sizeof(double)>>>(d_temp,blocks);
 
   double sum;
   cudaMemcpy(&sum, d_temp, sizeof(double), cudaMemcpyDeviceToHost);
@@ -498,7 +498,7 @@ double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_
 }
 
 // y=alpha*y
-__global__ void cudascaley(double* dy, double a, int nrows)
+__global__ void cvcudascaley(double* dy, double a, int nrows)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
   if(row < nrows){
@@ -511,7 +511,7 @@ void gpu_scaley(double* dy, double a, int nrows, int blocks, int threads)
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
 
-  cudascaley<<<dimGrid,dimBlock>>>(dy,a,nrows);
+  cvcudascaley<<<dimGrid,dimBlock>>>(dy,a,nrows);
 }
 
 

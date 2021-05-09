@@ -176,7 +176,7 @@ int nextPowerOfTwo(int v){
 
 //todo add debug variables in some way (maybe pass always it pointer or something like that)
 __global__
-void solveBcgCuda(
+void cvsolveBcgCuda(
         double *dA, int *djA, int *diA, double *dx, double *dtempv //Input data
         ,int nrows, int blocks, int n_shr_empty, int maxIt, int mattype
         ,int n_cells, double tolmax, double *ddiag //Init variables
@@ -536,8 +536,8 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 #endif
 
 
-  solveBcgCuda << < blocks, threads_block, max_threads_block * sizeof(double) >> >
-                                           //solveBcgCuda << < blocks, threads_block, threads_block * sizeof(double) >> >
+  cvsolveBcgCuda << < blocks, threads_block, max_threads_block * sizeof(double) >> >
+                                           //cvsolveBcgCuda << < blocks, threads_block, threads_block * sizeof(double) >> >
                                            (dA, djA, diA, dx, dtempv, nrows, blocks, n_shr_empty, maxIt, mattype, n_cells
                                                    ,tolmax, ddiag, dr0, dr0h, dn0, dp0, dt, ds, dAx2, dy, dz, daux
 #ifndef PMC_DEBUG_GPU
