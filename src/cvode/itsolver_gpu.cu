@@ -576,7 +576,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 }
 
-void check_input(double *dx, int len, int var_id){
+void check_inputd(double *dx, int len, int var_id){
 
   double *x=(double*)malloc(len*sizeof(double));
 
@@ -593,8 +593,27 @@ void check_input(double *dx, int len, int var_id){
 
   free(x);
 }
+
+void check_inputi(int *dx, int len, int var_id){
+
+  int *x=(int*)malloc(len*sizeof(int));
+
+  cudaMemcpy(x, dx, len*sizeof(int),cudaMemcpyDeviceToHost);
+
+  int n_zeros=0;
+  for (int i=0; i<5; i++){
+    if(x[i]==0.0)
+      n_zeros++;
+    printf("%d[%d]=%d\n",var_id,i,x[i]);
+  }
+  if(n_zeros==len)
+    printf("%d is all zeros\n",var_id);
+
+  free(x);
+}
+
 /*
-void check_inputd(double *x, int len, int var_id){
+void check_inputd2(double *x, int len, int var_id){
 
   int n_zeros=0;
   for (int i=0; i<5; i++){
@@ -608,12 +627,23 @@ void check_inputd(double *x, int len, int var_id){
 }
 */
 __global__
-void check_input_gpu(double *x, int len, int var_id)
+void cvcheck_input_gpud(double *x, int len, int var_id)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<5)
+  {
+    printf("%d[%d]=%-le\n",var_id,i,x[i]);
+  }
+}
 
-  printf("%d[%d]=%-le\n",var_id,i,x[i]);
-
+__global__
+void cvcheck_input_gpui(int *x, int len, int var_id)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<5)
+  {
+    printf("%d[%d]=d\n",var_id,i,x[i]);
+  }
 }
 
 void check_input_solvegpu(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv) {
@@ -639,24 +669,11 @@ void check_input_solvegpu(itsolver *bicg, double *dA, int *djA, int *diA, double
   double *aux = bicg->aux;
   double *daux = bicg->daux;
 
-  //Input
-  /*
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  double *b_ptr = N_VGetArrayPointer(b);//tempv
-  cudaMemcpy(bicg->dtempv,b_ptr,bicg->nrows*sizeof(int),cudaMemcpyHostToDevice);
-  double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
-  cudaMemcpy(bicg->dx,x_ptr,bicg->nrows*sizeof(int),cudaMemcpyHostToDevice);
-   */
-
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-
   int i=0;
-  //check_inputd(bicg->A,bicg->nnz,i++);
+  //check_inputd2(bicg->A,bicg->nnz,i++);
   //check_input(bicg->dA,bicg->nnz,i++);
   //check_input(bicg->dtempv,bicg->nrows,i++);
-  check_input(bicg->ddiag,bicg->nrows,i++);
+  //check_inputd(bicg->ddiag,bicg->nrows,i++);
   //check_input_gpu<< < 1, 5>> >(bicg->dA,bicg->nnz,i++);
 
   //check_input(bicg->djA,bicg->nnz*sizeof(int),i++);
@@ -675,6 +692,8 @@ void check_input_solvegpu(itsolver *bicg, double *dA, int *djA, int *diA, double
 
 
 //Algorithm: Biconjugate gradient
+//dx=last x solution (at start is 0)
+//dtempv=current x (input)
 void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv)
 {
   //Init variables ("public")
@@ -717,6 +736,25 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
 
   gpu_spmv(dr0,dx,nrows,dA,djA,diA,mattype,blocks,threads);  // r0= A*x
 
+#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+
+  double *aux_x1;
+  aux_x1=(double*)malloc(bicg->nrows*sizeof(double));
+
+  int k=0;
+  /*
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nnz,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+   */
+  //check_input(dr0,bicg->nrows,k++);
+
+  //printf("dr0[0] %-le\n",dr0[0]);
+
+#endif
+
   gpu_axpby(dr0,dtempv,1.0,-1.0,nrows,blocks,threads); // r0=1.0*rhs+-1.0r0 //y=ax+by
 
   gpu_yequalsx(dr0h,dr0,nrows,blocks,threads);  //r0h=r0
@@ -730,14 +768,6 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
 
   //printf("temp1 %-le", temp1);
   //printf("rho1 %f", rho1);
-
-
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
-
-  double *aux_x1;
-  aux_x1=(double*)malloc(bicg->nrows*sizeof(double));
-
-#endif
 
   //for(int it=0;it<maxIt;it++){
   int it=0;

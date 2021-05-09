@@ -78,7 +78,7 @@ void gpu_matScaleAddI(int nrows, double* dA, int* djA, int* diA, double alpha, i
 }
 
 __global__
-void check_input_gpud(double *x, int len, int var_id)
+void libsolvcheck_input_gpud(double *x, int len, int var_id)
 {
   int i = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -86,22 +86,12 @@ void check_input_gpud(double *x, int len, int var_id)
 
 }
 
-__device__ void cvcudadiagprecondd(){
-  int row= threadIdx.x + blockDim.x*blockIdx.x;
-  if(row==0)
-    printf("AQUI SI %d\n",row);
-}
-
 // Diagonal precond
 //todo same name not works, like some conflict happens
 __global__ void cvcudadiagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
-  cvcudadiagprecondd();
-  if(row==0)
-    printf("cvcudadiagprecond %d\n",row);
-  //printf("HOLA \n");
-  /*
+
   if(row < nrows){
     int jstart=diA[row];
     int jend  =diA[row+1];
@@ -112,27 +102,9 @@ __global__ void cvcudadiagprecond(int nrows, double* dA, int* djA, int* diA, dou
         else{
           ddiag[row]= 1.0;
         }
-        printf("[%d]=%-le\n",row,ddiag[row]);
       }
     }
   }
-*/
-
-}
-
-__global__ void cvcudadiagprecond0(int nrows, double* dA, int* djA, double* ddiag)
-{
-  int row= threadIdx.x + blockDim.x*blockIdx.x;
-  if(row==0)
-    printf("HOLA0 %d\n",row);
-
-}
-
-__global__ void cvcudadiagprecond1(int nrows, double* dA, int* djA, int* diA, double* ddiag)
-{
-  int row= threadIdx.x + blockDim.x*blockIdx.x;
-  if(row==0)
-    printf("HOLA1 %d\n",row);
 
 }
 
@@ -145,16 +117,9 @@ void gpu_diagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag, i
   dim3 dimBlock(threads,1,1);
 
   //printf("HOLA0 %d %d %d\n",blocks,threads,nrows);
-  //cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
-  cvcudadiagprecond0<<<dimGrid,dimBlock>>>(nrows, dA, djA, ddiag);
-  cvcudadiagprecond1<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
-  printf("HOLA1 \n");
   cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag);
-  cvcudaGetLastErrorC();
-  //HANDLE_ERROR(cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
-  //cvcudaGetLastErrorC(cvcudadiagprecond<<<dimGrid,dimBlock>>>(nrows, dA, djA, diA, ddiag));
-  //printf("HOLA1 \n");
-  //check_input_gpud<< < 1, 5>> >(ddiag,nrows,0);
+  //cvcudaGetLastErrorC();
+  //cvcheck_input_gpud<< < 1, 5>> >(ddiag,nrows,0);
 }
 
 // y = constant
@@ -210,7 +175,7 @@ __global__ void cvcudaSpmvCSC(double* dx, double* db, int nrows, double* dA, int
 	}
 }
 
-void gpu_spmv(double* dx ,double* db, int nrows, double* dA, int *djA,int *diA,int mattype,int blocks,int  threads)
+void gpu_spmv(double* dx ,double* db, int nrows, double* dA, int *djA,int *diA,int mattype,int blocks,int threads)
 {
    dim3 dimGrid(blocks,1,1);
    dim3 dimBlock(threads,1,1);

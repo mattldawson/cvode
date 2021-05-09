@@ -106,12 +106,22 @@ void alloc_solver_gpu_cvode(void *cvode_mem)
   cudaMalloc((void**)&bicg->dewt,bicg->nrows*sizeof(double));
   cudaMalloc((void**)&bicg->dacor,bicg->nrows*sizeof(double));
   cudaMalloc((void**)&bicg->dtempv,bicg->nrows*sizeof(double));
-
   //cudaMalloc((void**)&bicg->dzn,bicg->nrows*(cv_mem->cv_qmax+1)*sizeof(double));
 
   //ODE concs arrays
   cudaMalloc((void**)&bicg->dcv_y,bicg->nrows*sizeof(double));
   cudaMalloc((void**)&bicg->dx,bicg->nrows*sizeof(double));
+
+  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
+  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
+  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dewt,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dacor,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dftemp,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  cudaMemset(bicg->dx, 0.0, bicg->nrows*sizeof(double));
+  cudaMemset(bicg->dtempv, 0.0, bicg->nrows*sizeof(double));
+  //cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
 
   cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
@@ -120,19 +130,11 @@ void alloc_solver_gpu_cvode(void *cvode_mem)
   //Init Linear Solver variables
   createSolver(bicg);
 
-  gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
+  //gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
 
 
-  /*
-  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
-  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dewt,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dacor,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dftemp,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-*/
+
+
 
 
   /*
@@ -729,8 +731,9 @@ int cvDlsInitialize(CVodeMem cv_mem)
   return(cvdls_mem->last_flag);
 }
 
+/*
 
-void check_inputd(double *x, int len, int var_id){
+void cvdcheck_inputd(double *x, int len, int var_id){
 
   int n_zeros=0;
   for (int i=0; i<5; i++){
@@ -744,7 +747,7 @@ void check_inputd(double *x, int len, int var_id){
 
 }
 
-void check_inputi(int *x, int len, int var_id){
+void cvdcheck_inputi(int *x, int len, int var_id){
 
   int n_zeros=0;
   for (int i=0; i<5; i++){
@@ -756,6 +759,7 @@ void check_inputi(int *x, int len, int var_id){
     printf("%d is all zeros\n",var_id);
 
 }
+ */
 
 /*-----------------------------------------------------------------
   cvDlsSetup
@@ -898,7 +902,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   check_inputi(bicg->iA,(bicg->nrows+1),i++);
    */
 
-  //gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
+  gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
 
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
@@ -962,8 +966,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
   double *b_ptr = N_VGetArrayPointer(b);//tempv
   cudaMemcpy(bicg->dtempv,b_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
-  cudaMemcpy(bicg->dx,x_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
+  //double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
+  //cudaMemcpy(bicg->dx,x_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
 
 
   /*
