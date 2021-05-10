@@ -317,20 +317,6 @@ double gpu_dotxy(double* vec1, double* vec2, double* h_temp, double* d_temp, int
   return h_temp[0];*/
 }
 
-/*
-double gpu_dotxy(double *dy, double* dx, int nrows)
-{
-   double dot=0.0;
-   cublasHandle_t hl;
-   cublasCreate(&hl);
-
-   cublasDdot(hl,nrows,dy,1,dx,1,&dot);
-
-   cublasDestroy(hl);
-   return dot;
-}
-*/
-
 // z= a*z + x + b*y
 __global__ void cvcudazaxpbypc(double* dz, double* dx,double* dy, double a, double b, int nrows)
 {
@@ -646,7 +632,7 @@ __device__ void cudaDevicereducey(double *g_odata, unsigned int n, int n_shr_emp
   if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 */
-
+/*
 __device__ void cudaDevicedotxy_old(double *g_idata1, double *g_idata2,
                                 double *g_odata, unsigned int n, int n_shr_empty)
 {
@@ -661,9 +647,7 @@ __device__ void cudaDevicedotxy_old(double *g_idata1, double *g_idata2,
 
 #ifndef DEV_DEVICEDOTXY
   //under development, fix returning deriv=0 and slower
-  /*if(tid<blockDim.x/2)
-    for (int j=0; j<2; j++)
-      sdata[j*blockDim.x/2 + tid] = 0;*/
+
 
   for( int j = threadIdx.x; j < n_shr_empty+blockDim.x; j+=blockDim.x)
     sdata[j]=0.0;
@@ -700,6 +684,8 @@ __device__ void cudaDevicedotxy_old(double *g_idata1, double *g_idata2,
   *g_odata = sdata[0];
 }
 
+*/
+
 __device__ void cudaDevicedotxy(double *g_idata1, double *g_idata2,
                                  double *g_odata, unsigned int n, int n_shr_empty)
 {
@@ -730,7 +716,6 @@ __device__ void cudaDevicedotxy(double *g_idata1, double *g_idata2,
   __syncthreads();
 
 #else
-
 
   if (tid == 0){
     for (int j=0; j<blockDim.x+n_shr_empty; j++)

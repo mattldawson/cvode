@@ -224,7 +224,6 @@ void cvsolveBcgCuda(
     cudaDevicesetconst(dy, 0.0, nrows);
     cudaDevicesetconst(dz, 0.0, nrows);
 
-
 #ifdef BASIC_SPMV
     cudaDevicesetconst(dr0, 0.0, nrows);
     __syncthreads();
@@ -246,7 +245,7 @@ void cvsolveBcgCuda(
     int it=0;
 #endif
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
     if(i==0){
       //printf("%d dr0[%d] %-le\n",it,i,dr0[i]);
@@ -263,7 +262,7 @@ void cvsolveBcgCuda(
 
       cudaDevicedotxy(dr0, dr0h, &rho1, nrows, n_shr_empty);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
       if(i==0){
       //printf("%d dr0[%d] %-le\n",it,i,dr0[i]);
@@ -298,7 +297,7 @@ void cvsolveBcgCuda(
 
       cudaDevicedotxy(dr0h, dn0, &temp1, nrows, n_shr_empty);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
       if(i==0){
         printf("%d %d temp1 %-le\n",it,i,temp1);
@@ -315,7 +314,7 @@ void cvsolveBcgCuda(
       //gpu_zaxpby(1.0,dr0,-1.0*alpha,dn0,ds,nrows,blocks,threads); // a*x + b*y = z
       cudaDevicezaxpby(1.0, dr0, -1.0 * alpha, dn0, ds, nrows);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
       if(i==0){
         printf("%d ds[%d] %-le\n",it,i,ds[i]);
@@ -346,7 +345,7 @@ void cvsolveBcgCuda(
       cudaDevicedotxy(dz, dAx2, &temp1, nrows, n_shr_empty);
       __syncthreads();
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
       if(i>=0){
         //printf("%d ddiag[%d] %-le\n",it,i,ddiag[i]);
@@ -366,7 +365,7 @@ void cvsolveBcgCuda(
 
       cudaDevicedotxy(dAx2, dAx2, &temp2, nrows, n_shr_empty);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
 
       if(i==0){
         printf("%d %d temp2 %-le\n",it,i,temp2);
@@ -452,7 +451,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   double *dz = bicg->dz;
   double *daux = bicg->daux;
 
-#ifdef DEBUG_SOLVEBCGCUDA
+#ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("solveGPUBlock\n");
   }
@@ -483,7 +482,6 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 #ifdef INDEPENDENCY_CELLS
 
-  //todo fix if max_threads_block > bicg->threads then what?
   int max_threads_block = nextPowerOfTwo(size_cell);//bicg->threads;
   //int n_shr_empty = max_threads-size_cell;//nextPowerOfTwo(size_cell)-size_cell;
   //int threads_block = max_threads_block - n_shr_empty; //last multiple of size_cell before max_threads
@@ -510,7 +508,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   int blocks = (nrows+threads_block-1)/threads_block;
 #endif
 
-#ifdef DEBUG_SOLVEBCGCUDA
+#ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("size_cell %d nrows %d max_threads_block %d blocks %d threads_block %d n_shr_empty %d\n",
            size_cell,nrows,max_threads_block,blocks,threads_block,n_shr_empty);
@@ -550,7 +548,7 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
   cudaMemcpy(&it,dit_ptr,sizeof(int),cudaMemcpyDeviceToHost);
   bicg->counterBiConjGradInternal += it;
 
-#ifdef DEBUG_SOLVEBCGCUDA
+#ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("counterBiConjGradInternal %d\n",
            bicg->counterBiConjGradInternal);
@@ -642,7 +640,7 @@ void cvcheck_input_gpui(int *x, int len, int var_id)
   int i = blockIdx.x * blockDim.x + threadIdx.x;
   if(i<5)
   {
-    printf("%d[%d]=d\n",var_id,i,x[i]);
+    printf("%d[%d]=%d\n",var_id,i,x[i]);
   }
 }
 
@@ -692,8 +690,8 @@ void check_input_solvegpu(itsolver *bicg, double *dA, int *djA, int *diA, double
 
 
 //Algorithm: Biconjugate gradient
-//dx=last x solution (at start is 0)
-//dtempv=current x (input)
+//dx[in/out]=last x solution (at start is 0)
+//dtempv[in]=current x input
 void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv)
 {
   //Init variables ("public")
@@ -718,13 +716,13 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
   double *aux = bicg->aux;
   double *daux = bicg->daux;
 
-#ifdef DEBUG_SOLVEBCGCUDA
+#ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
     printf("solveGPU\n");
   }
 #endif
 
-#ifndef CHECK_SOLVEGPU
+#ifdef CHECK_SOLVEGPU
 
   if(bicg->counterBiConjGrad==0)
     check_input_solvegpu(bicg, dA, djA, diA, dx, dtempv);
@@ -736,22 +734,15 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
 
   gpu_spmv(dr0,dx,nrows,dA,djA,diA,mattype,blocks,threads);  // r0= A*x
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
-
-  double *aux_x1;
-  aux_x1=(double*)malloc(bicg->nrows*sizeof(double));
+#ifdef CHECK_SOLVEGPU
 
   int k=0;
-  /*
-  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nnz,k++);
-  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
-  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
-  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
-  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
-   */
-  //check_input(dr0,bicg->nrows,k++);
-
-  //printf("dr0[0] %-le\n",dr0[0]);
+  //cvcheck_input_gpud<< < 1, 5>> >(dr0,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(dx,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(dtempv,bicg->nrows,k++);
+  //cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nnz,k++);
+  //cvcheck_input_gpui<< < 1, 5>> >(bicg->djA,bicg->nnz,k++);
+  //cvcheck_input_gpui<< < 1, 5>> >(bicg->diA,(bicg->nrows+1),k++);
 
 #endif
 
@@ -769,6 +760,13 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
   //printf("temp1 %-le", temp1);
   //printf("rho1 %f", rho1);
 
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
+
+  double *aux_x1;
+  aux_x1=(double*)malloc(bicg->nrows*sizeof(double));
+
+#endif
+
   //for(int it=0;it<maxIt;it++){
   int it=0;
   do {
@@ -776,7 +774,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     rho1=gpu_dotxy(dr0, dr0h, aux, daux, nrows,(blocks + 1) / 2, threads);//rho1 =<r0,r0h>
     //rho1=gpu_dotxy(dr0, dr0h, aux, daux, nrows,blocks, threads);//rho1 =<r0,r0h>
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
     //good here first iter
     printf("%d rho1 %-le\n",it,rho1);
 #endif
@@ -794,7 +792,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     temp1=gpu_dotxy(dr0h, dn0, aux, daux, nrows,(blocks + 1) / 2, threads);
     //temp1=gpu_dotxy(dr0h, dn0, aux, daux, nrows, blocks, threads);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
     printf("%d temp1 %-le\n",it,temp1);
 #endif
 
@@ -804,7 +802,7 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
 
     gpu_zaxpby(1.0,dr0,-1.0*alpha,dn0,ds,nrows,blocks,threads);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
     cudaMemcpy(aux_x1,ds,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
 
     printf("%d ds[0] %-le\n",it,aux_x1[0]);
@@ -820,23 +818,14 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     temp1=gpu_dotxy(dz, dAx2, aux, daux, nrows,(blocks + 1) / 2, threads);
     //temp1=gpu_dotxy(dz, dAx2, aux, daux, nrows,blocks, threads);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
-    cudaMemcpy(aux_x1,dAx2,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
-
-    for(int i=0; i<bicg->nrows; i++){
-      //printf("%d ddiag[%i] %-le\n",it,i,aux_x1[i]);
-      //printf("%d dt[%i] %-le\n",it,i,aux_x1[i]);
-      //printf("%d dAx2[%i] %-le\n",it,i,aux_x1[i]);
-      //printf("%d dz[%i] %-le\n",it,i,aux_x1[i]);
-    }
-
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
     printf("%d temp1 %-le\n",it,temp1);
 #endif
 
     temp2=gpu_dotxy(dAx2, dAx2, aux, daux, nrows,(blocks + 1) / 2, threads);
     //temp2=gpu_dotxy(dAx2, dAx2, aux, daux, nrows,blocks, threads);
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
     printf("%d temp2 %-le\n",it,temp2);
 #endif
 
@@ -862,11 +851,33 @@ void solveGPU(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double
     it++;
   }while(it<maxIt && temp1>tolmax);
 
+#ifdef CHECK_SOLVEGPU
+
+  printf("output dx:\n");
+
+  //int k=0;
+  //cvcheck_input_gpud<< < 1, 5>> >(dr0,bicg->nrows,k++);
+
+  //cvcheck_input_gpud<< < 1, 5>> >(dtempv,bicg->nrows,k++);
+  /*cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);
+  cvcheck_input_gpud<< < 1, 5>> >(bicg->dA,bicg->nrows,k++);*/
+
+  //bicg->dx = dx;
+/*
+  cvcheck_input_gpud<< < 1, 5>> >(dx,bicg->nrows,k++);
+  check_inputd(bicg->dx,bicg->nrows,k++);
+  check_inputd(dx,bicg->nrows,k++);*/
+
+
+#endif
+
 #ifndef PMC_DEBUG_GPU
   bicg->counterBiConjGradInternal += it;
 #endif
 
-#ifndef DEBUG_SOLVEBCGCUDA_DEEP
+#ifdef DEBUG_SOLVEBCGCUDA_DEEP
   free(aux_x1);
 #endif
 
