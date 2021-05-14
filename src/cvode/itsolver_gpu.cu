@@ -25,7 +25,7 @@ void createSolver(itsolver *bicg)
   //Init variables ("public")
   bicg->mattype=1; //CSC
   bicg->maxIt=1000;
-  bicg->tolmax=1e-12; //cv_mem->cv_reltol CAMP selected accuracy (1e-8) //1e-10;//1e-6
+  bicg->tolmax=1.0E-30; //cv_mem->cv_reltol CAMP selected accuracy (1e-8) //1e-10;//1e-6
 
   int device=0;//Select GPU
   cudaDeviceProp prop;
@@ -164,6 +164,79 @@ int nextPowerOfTwo(int v){
   //printf("nextPowerOfTwo %d", v);
 
   return v;
+}
+
+void check_inputd(double *dx, int len, int var_id){
+
+  double *x=(double*)malloc(len*sizeof(double));
+
+  cudaMemcpy(x, dx, len*sizeof(double),cudaMemcpyDeviceToHost);
+
+  int n_zeros=0;
+  for (int i=0; i<5; i++){
+    if(x[i]==0.0)
+      n_zeros++;
+    printf("%d[%d]=%-le\n",var_id,i,x[i]);
+  }
+  if(n_zeros==len)
+    printf("%d is all zeros\n",var_id);
+
+  free(x);
+}
+
+void check_inputi(int *dx, int len, int var_id){
+
+  int *x=(int*)malloc(len*sizeof(int));
+
+  cudaMemcpy(x, dx, len*sizeof(int),cudaMemcpyDeviceToHost);
+
+  int n_zeros=0;
+  for (int i=0; i<5; i++){
+    if(x[i]==0.0)
+      n_zeros++;
+    printf("%d[%d]=%d\n",var_id,i,x[i]);
+  }
+  if(n_zeros==len)
+    printf("%d is all zeros\n",var_id);
+
+  free(x);
+}
+
+
+
+
+/*
+void check_inputd2(double *x, int len, int var_id){
+
+  int n_zeros=0;
+  for (int i=0; i<5; i++){
+    if(x[i]==0.0)
+      n_zeros++;
+    printf("%d[%d]=%-le\n",var_id,i,x[i]);
+  }
+  if(n_zeros==len)
+    printf("%d is all zeros\n",var_id);
+
+}
+*/
+__global__
+void cvcheck_input_gpud(double *x, int len, int var_id)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<5)
+  {
+    printf("%d[%d]=%-le\n",var_id,i,x[i]);
+  }
+}
+
+__global__
+void cvcheck_input_gpui(int *x, int len, int var_id)
+{
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if(i<5)
+  {
+    printf("%d[%d]=%d\n",var_id,i,x[i]);
+  }
 }
 
 //todo instead sending all in one kernel, divide in 2 or 4 kernels with streams and check if
@@ -510,8 +583,8 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 #ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
-    printf("size_cell %d nrows %d max_threads_block %d blocks %d threads_block %d n_shr_empty %d\n",
-           size_cell,nrows,max_threads_block,blocks,threads_block,n_shr_empty);
+    printf("n_cells %d size_cell %d nrows %d nnz %d max_threads_block %d blocks %d threads_block %d n_shr_empty %d\n",
+           n_cells,size_cell,nrows,bicg->nnz,max_threads_block,blocks,threads_block,n_shr_empty);
   }
 #endif
 
@@ -574,75 +647,6 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 }
 
-void check_inputd(double *dx, int len, int var_id){
-
-  double *x=(double*)malloc(len*sizeof(double));
-
-  cudaMemcpy(x, dx, len*sizeof(double),cudaMemcpyDeviceToHost);
-
-  int n_zeros=0;
-  for (int i=0; i<5; i++){
-    if(x[i]==0.0)
-      n_zeros++;
-    printf("%d[%d]=%-le\n",var_id,i,x[i]);
-  }
-  if(n_zeros==len)
-    printf("%d is all zeros\n",var_id);
-
-  free(x);
-}
-
-void check_inputi(int *dx, int len, int var_id){
-
-  int *x=(int*)malloc(len*sizeof(int));
-
-  cudaMemcpy(x, dx, len*sizeof(int),cudaMemcpyDeviceToHost);
-
-  int n_zeros=0;
-  for (int i=0; i<5; i++){
-    if(x[i]==0.0)
-      n_zeros++;
-    printf("%d[%d]=%d\n",var_id,i,x[i]);
-  }
-  if(n_zeros==len)
-    printf("%d is all zeros\n",var_id);
-
-  free(x);
-}
-
-/*
-void check_inputd2(double *x, int len, int var_id){
-
-  int n_zeros=0;
-  for (int i=0; i<5; i++){
-    if(x[i]==0.0)
-      n_zeros++;
-    printf("%d[%d]=%-le\n",var_id,i,x[i]);
-  }
-  if(n_zeros==len)
-    printf("%d is all zeros\n",var_id);
-
-}
-*/
-__global__
-void cvcheck_input_gpud(double *x, int len, int var_id)
-{
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if(i<5)
-  {
-    printf("%d[%d]=%-le\n",var_id,i,x[i]);
-  }
-}
-
-__global__
-void cvcheck_input_gpui(int *x, int len, int var_id)
-{
-  int i = blockIdx.x * blockDim.x + threadIdx.x;
-  if(i<5)
-  {
-    printf("%d[%d]=%d\n",var_id,i,x[i]);
-  }
-}
 
 void check_input_solvegpu(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, double *dtempv) {
   //Init variables ("public")

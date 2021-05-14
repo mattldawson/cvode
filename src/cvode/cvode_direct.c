@@ -81,7 +81,7 @@ void alloc_solver_gpu_cvode(void *cvode_mem)
   //Linking Matrix data, later this data must be allocated in GPU
   //bicg->n_cells=1;//md->n_cells;
 
-  bicg->n_cells=2;//md->n_cells;
+  bicg->n_cells=10;//md->n_cells;
 
   bicg->nnz=SM_NNZ_S(J);
   bicg->nrows=SM_NP_S(J);
@@ -964,6 +964,13 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
   double *b_ptr = N_VGetArrayPointer(b);//tempv
+
+  /*
+  for(int i=0; i<bicg->nrows; i++){
+    if(b_ptr[i]==0.0) b_ptr[i]=1.0E-60;
+  }
+*/
+
   cudaMemcpy(bicg->dtempv,b_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
   double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
   retval=0;
@@ -981,8 +988,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
-#ifndef CHECK_LS_GPU_CPU
 #ifndef PMC_DEBUG_GPU
+#ifdef CHECK_LS_GPU_CPU
+
     //cudaMemcpy(x,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
     //printf("HI\n");
     //printf("bicg->counterBiConjGrad %d\n",bicg->counterBiConjGrad);
@@ -1044,8 +1052,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
       printf("[%d] max_error %-le aux1_max_error aux2_max_error %-le %-le  \n",
               max_error_i, max_error, aux1_max_error, aux2_max_error);
 
-      bicg->counterBiConjGrad++;
-
       //Iter linsolve
       cudaFree(dx_init);
       free(aux_x2);
@@ -1053,12 +1059,23 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     }
 
 #endif
+
 #endif
+
+  //printf("AAA\n");
 
   //solveGPU(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
   solveGPU_block(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
 
   cudaMemcpy(x_ptr,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
+
+  /*
+  for(int i=0; i<bicg->nrows; i++){
+    if(x_ptr[i]==0.0) x_ptr[i]=1.0E-60;
+  }
+*/
+
+  bicg->counterBiConjGrad++;
 
   // call the generic linear system solver, and copy b to x
   //retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);

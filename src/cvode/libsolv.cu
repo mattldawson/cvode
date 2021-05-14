@@ -87,7 +87,6 @@ void libsolvcheck_input_gpud(double *x, int len, int var_id)
 }
 
 // Diagonal precond
-//todo same name not works, like some conflict happens
 __global__ void cvcudadiagprecond(int nrows, double* dA, int* djA, int* diA, double* ddiag)
 {
   int row= threadIdx.x + blockDim.x*blockIdx.x;
