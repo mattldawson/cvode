@@ -883,9 +883,9 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   itsolver *bicg = &cv_mem->bicg;
 
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
+
 //  HANDLE_ERROR(cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice));
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
+
 
   //printf("bicg->nrows %d",bicg->nrows);
   //printf("SM_NP_S(cvdls_mem->A) %d",SM_NP_S(cvdls_mem->A));
@@ -893,7 +893,8 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   //cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
   cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-
+  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
+  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
 
   /*
   int i=0;
