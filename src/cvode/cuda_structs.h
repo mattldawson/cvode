@@ -96,7 +96,7 @@ typedef struct
   cudaEvent_t startLinSolSolve;
   cudaEvent_t startNewtonIt;
   cudaEvent_t startcvStep;
-  cudaEvent_t startBiConjGrad;
+  cudaEvent_t startBCG;
   cudaEvent_t startJac;
 
   cudaEvent_t stopDerivNewton;

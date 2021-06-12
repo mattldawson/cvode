@@ -132,7 +132,7 @@ void createSolver(itsolver *bicg)
   cudaEventCreate(&bicg->startLinSolSolve);
   cudaEventCreate(&bicg->startNewtonIt);
   cudaEventCreate(&bicg->startcvStep);
-  cudaEventCreate(&bicg->startBiConjGrad);
+  cudaEventCreate(&bicg->startBCG);
   cudaEventCreate(&bicg->startJac);
 
   cudaEventCreate(&bicg->stopDerivNewton);
