@@ -268,11 +268,8 @@ void cvsolveBcgCuda(
   unsigned int tid = threadIdx.x;
   int active_threads = nrows;
 
-#ifdef BCG_ALL_THREADS
-  if(1){
-#else
+
   if(i<active_threads){
-#endif
 
     double alpha,rho0,omega0,beta,rho1,temp1,temp2;
     alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
@@ -568,18 +565,10 @@ void solveGPU_block(itsolver *bicg, double *dA, int *djA, int *diA, double *dx, 
 
 #endif
 
-#ifdef BCG_ALL_THREADS
-
-  int threads_block = max_threads_block;
-  int n_shr_empty = 0;
-  int blocks = (nrows+threads_block-1)/threads_block;
-
-#else
   int n_cells_block =  max_threads_block/size_cell;
   int threads_block = n_cells_block*size_cell;
   int n_shr_empty = max_threads_block-threads_block;
   int blocks = (nrows+threads_block-1)/threads_block;
-#endif
 
 #ifndef DEBUG_SOLVEBCGCUDA
   if(bicg->counterBiConjGrad==0) {
