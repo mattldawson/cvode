@@ -390,7 +390,7 @@ void gpu_axpy(double* dy, double* dx ,double a, int nrows, int blocks, int threa
 }
 
 // sqrt(sum ( (x_i*y_i)^2)/n)
-__global__ void cvcudaDVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
+__global__ void cvcudaVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
 {
   extern __shared__ double sdata[];
   unsigned int tid = threadIdx.x;
@@ -420,7 +420,7 @@ double gpu_VWRMS_Norm(int n, double* vec1,double* vec2,double* h_temp,double* d_
   dim3 dimGrid(blocks,1,1);
   dim3 dimBlock(threads,1,1);
 
-  cvcudaDVWRMS_Norm<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,n);
+  cvcudaVWRMS_Norm<<<dimGrid,dimBlock,threads*sizeof(double)>>>(vec1,vec2,d_temp,n);
 
   //cudaMemcpy(h_temp, d_temp, blocks * sizeof(double), cudaMemcpyDeviceToHost);
 
@@ -631,59 +631,7 @@ __device__ void cudaDevicereducey(double *g_odata, unsigned int n, int n_shr_emp
   if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 */
-/*
-__device__ void cudaDevicedotxy_old(double *g_idata1, double *g_idata2,
-                                double *g_odata, unsigned int n, int n_shr_empty)
-{
-  extern __shared__ double sdata[];
-  unsigned int tid = threadIdx.x;
-  //unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
-  unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 
-  //Used to ensure last block has 0 values for non-zero cases (Last block can have less cells than previous blocks)
-  //todo condition not needed with tid<active_threads
-  double mySum = (i < n) ? g_idata1[i]*g_idata2[i] : 0.;
-
-#ifndef DEV_DEVICEDOTXY
-  //under development, fix returning deriv=0 and slower
-
-
-  for( int j = threadIdx.x; j < n_shr_empty+blockDim.x; j+=blockDim.x)
-    sdata[j]=0.0;
-
-#else
-    //Last thread assign 0 to empty shr values
-  //todo: it's needed?
-  if (tid == 0)//one thread
-  {
-    //todo fix, returning 0 sometimes on mock_monarch cells=1000 (bug appears after <=7 attemps)
-    //speedup when active, probably cause if no active some threads are not
-    // doing anything so it takes more time to converge, but then sometimes returns deriv=0(fix)
-    //needed or diff results on n_cells=100 3 species
-    for (int j=0; j<n_shr_empty; j++)
-      sdata[blockDim.x+j] = 0.; //Assign 0 to remaining sdata (cases sdata_id>=threads_block)
-  }
-#endif
-
-  //Set shr_memory to local values
-  sdata[tid] = mySum;
-  __syncthreads();
-
-  //todo ensure that n_shr_empty is less than half of the max_threads to have enough threads
-  for (unsigned int s=(blockDim.x+n_shr_empty)/2; s>0; s>>=1)
-  {
-    if (tid < s)
-      sdata[tid] = mySum = mySum + sdata[tid + s];
-
-    __syncthreads();
-  }
-
-  //dont need to access global memory on block-cells
-  //if (tid == 0) g_odata[blockIdx.x] = sdata[0];
-  *g_odata = sdata[0];
-}
-
-*/
 
 __device__ void cudaDevicedotxy(double *g_idata1, double *g_idata2,
                                  double *g_odata, unsigned int n, int n_shr_empty)
@@ -709,10 +657,7 @@ __device__ void cudaDevicedotxy(double *g_idata1, double *g_idata2,
 */
 
   __syncthreads();
-
-
   sdata[tid] = g_idata1[i]*g_idata2[i];
-
   __syncthreads();
 
   for (unsigned int s=(blockDim.x+n_shr_empty)/2; s>0; s>>=1)
@@ -772,22 +717,34 @@ __device__ void cudaDeviceaxpy(double* dy,double* dx, double a, int nrows)
   }
 }
 
+
+
 // sqrt(sum ( (x_i*y_i)^2)/n)
-__device__ void cudaDeviceDVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, unsigned int n)
+__device__ void cudaDeviceVWRMS_Norm(double *g_idata1, double *g_idata2, double *g_odata, int n, int n_shr)
 {
   extern __shared__ double sdata[];
   unsigned int tid = threadIdx.x;
-  unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
+  //unsigned int i = blockIdx.x*(blockDim.x*2) + threadIdx.x;
+  unsigned int i = blockIdx.x*blockDim.x + threadIdx.x;
 
+  if (tid == 0){
+    for (int j=0; j<n_shr; j++)
+      sdata[j] = 0.;
+  }
+
+/*
   double mySum = (i < n) ? g_idata1[i]*g_idata1[i]*g_idata2[i]*g_idata2[i] : 0;
 
   if (i + blockDim.x < n)
     mySum += g_idata1[i+blockDim.x]*g_idata1[i+blockDim.x]*g_idata2[i+blockDim.x]*g_idata2[i+blockDim.x];
+*/
 
+  __syncthreads();
+  double mySum=g_idata1[i]*g_idata1[i]*g_idata2[i]*g_idata2[i];
   sdata[tid] = mySum;
   __syncthreads();
 
-  for (unsigned int s=blockDim.x/2; s>0; s>>=1)
+  for (unsigned int s=n_shr/2; s>0; s>>=1)
   {
     if (tid < s)
       sdata[tid] = mySum = mySum + sdata[tid + s];
@@ -795,7 +752,10 @@ __device__ void cudaDeviceDVWRMS_Norm(double *g_idata1, double *g_idata2, double
     __syncthreads();
   }
 
-  if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+  //if (tid == 0) g_odata[blockIdx.x] = sdata[0];
+  g_odata[0] = sqrt(sdata[0]/n);
+  //*g_odata = sqrt(sdata[0]/n);
+  __syncthreads();
 }
 
 // y=alpha*y
