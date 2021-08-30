@@ -820,20 +820,7 @@ int CVodeGetCurrentTime(void *cvode_mem, realtype *tcur)
 
 #ifdef PMC_PROFILING
 
-int CVodeGetcounterLS(void *cvode_mem, int *tcur)
-{
-  CVodeMem cv_mem;
-
-  cv_mem = (CVodeMem) cvode_mem;
-
-  *tcur = cv_mem->counterLinSolSolve;
-
-  //cv_mem->counterLinSolSolve=0;
-
-  return(CV_SUCCESS);
-}
-
-int CVodeGettimes(void *cvode_mem, double *tcur)
+int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters)
 {
   CVodeMem cv_mem;
 
@@ -841,6 +828,9 @@ int CVodeGettimes(void *cvode_mem, double *tcur)
 
   tcur[0] = (double)(cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve);
   tcur[13] = (double)(cv_mem->timecvStep);
+
+  counters[0] = cv_mem->counterLinSolSolve;
+  counters[3] = cv_mem->countercvStep;
 
   //cv_mem->timeKLUSparseSetup = 0.0;
   //cv_mem->timeKLUSparseSolve = 0.0;
