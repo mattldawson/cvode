@@ -590,32 +590,23 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
 
   
   /* perform operation based on existing/necessary structure */
-//printf("C SPARSE: %lf", c);
 
   /*   case 1: A already contains a diagonal */
   if (newvals == 0) {
-
-	//printf("CASE 1 ");
 
     /* iterate through columns, adding 1.0 to diagonal */
     for (j=0; j < SUNMIN(M,N); j++)
       for (i=Ap[j]; i<Ap[j+1]; i++)
         if (Ai[i] == j) {
           Ax[i] = ONE + c*Ax[i];
-
         } else {
           Ax[i] = c*Ax[i];
         }
-
-//printf("Ax5 %lf:", Ax[5]);
 
 
   /*   case 2: A has sufficient storage, but does not already contain a diagonal */
   } else if (!newmat) {
 
-#ifdef PMC_DEBUG
-	  printf("WARNING: Triggering KLU case 2\n");
-#endif
 
     /* create work arrays for nonzero indices and values in a single column (row) */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));
@@ -671,10 +662,6 @@ int SUNMatScaleAddI_Sparse(realtype c, SUNMatrix A)
     
   /*   case 3: A must be reallocated with sufficient storage */
   } else {
-
-#ifdef PMC_DEBUG
-	printf("WARNING: Triggering KLU case 3\n");
-#endif
 
     /* create work arrays for nonzero indices and values */
     w = (sunindextype *) malloc(M * sizeof(sunindextype));

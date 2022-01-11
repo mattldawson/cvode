@@ -2881,8 +2881,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     if (retval < 0) return(CV_RHSFUNC_FAIL);
     if (retval > 0) return(RHSFUNC_RECVR);
 
-    if (callSetup)
-    {
+    if (callSetup) {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
 #ifdef PMC_PROFILING
       double startLinSolSetup=MPI_Wtime();
