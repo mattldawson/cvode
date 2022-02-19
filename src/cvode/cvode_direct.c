@@ -36,16 +36,7 @@
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
 
-//#include "test_cpu.h"
-
-#include "itsolver_gpu.h"
-#include "libsolv.h"
-
-#ifdef PMC_USE_GPU
-
-#endif
-
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
 #include <mpi.h>
 #endif
 
@@ -65,116 +56,6 @@
 /*=================================================================
   EXPORTED FUNCTIONS -- REQUIRED
   =================================================================*/
-
-#ifdef PMC_USE_GPU
-
-//#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-
-void alloc_solver_gpu_cvode(void *cvode_mem)
-{
-  CVodeMem cv_mem = (CVodeMem) cvode_mem;
-  itsolver *bicg = &cv_mem->bicg;
-  CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
-  SUNMatrix J = cvdls_mem->A;
-
-  //Init GPU ODE solver variables
-  //Linking Matrix data, later this data must be allocated in GPU
-  //bicg->n_cells=1;//md->n_cells;
-
-  bicg->n_cells=10;//md->n_cells;
-
-  bicg->nnz=SM_NNZ_S(J);
-  bicg->nrows=SM_NP_S(J);
-  bicg->A=(double*)SM_DATA_S(J);
-
-  //Using int per default as sundindextype gives wrong results in CPU, so translate from int64 to int
-  bicg->jA=(int*)malloc(sizeof(int)*SM_NNZ_S(J));
-  bicg->iA=(int*)malloc(sizeof(int)*(SM_NP_S(J)+1));
-  for(int i=0;i<SM_NNZ_S(J);i++)
-    bicg->jA[i]=SM_INDEXVALS_S(J)[i];
-  for(int i=0;i<=SM_NP_S(J);i++){
-    bicg->iA[i]=SM_INDEXPTRS_S(J)[i];
-    //printf("bicg->iA %d[%d]",bicg->iA[i],i);
-  }
-
-  // Allocating matrix data to the GPU
-  cudaMalloc((void**)&bicg->dA,bicg->nnz*sizeof(double));
-  cudaMalloc((void**)&bicg->djA,bicg->nnz*sizeof(int));
-  cudaMalloc((void**)&bicg->diA,(bicg->nrows+1)*sizeof(int));
-
-  //ODE aux variables
-  cudaMalloc((void**)&bicg->dewt,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dacor,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dtempv,bicg->nrows*sizeof(double));
-  //cudaMalloc((void**)&bicg->dzn,bicg->nrows*(cv_mem->cv_qmax+1)*sizeof(double));
-
-  //ODE concs arrays
-  cudaMalloc((void**)&bicg->dcv_y,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dx,bicg->nrows*sizeof(double));
-
-  double *ewt = N_VGetArrayPointer(cv_mem->cv_ewt);
-  double *tempv = N_VGetArrayPointer(cv_mem->cv_tempv);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dewt,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dacor,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dftemp,ewt,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemset(bicg->dx, 0.0, bicg->nrows*sizeof(double));
-  cudaMemset(bicg->dtempv, 0.0, bicg->nrows*sizeof(double));
-  //cudaMemcpy(bicg->dx,tempv,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-
-  //Init Linear Solver variables
-  createSolver(bicg);
-
-  //gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
-
-
-
-
-
-
-  /*
-
-    // Allocating matrix data to the GPU
-  //ModelDataGPU *mGPU = &sd->mGPU;
-  //bicg->dA=mGPU->J;//set itsolver gpu pointer to jac pointer initialized at camp
-  cudaMalloc((void**)&bicg->dA,bicg->nnz*sizeof(double));
-  //bicg->dftemp=mGPU->deriv_data; //deriv is gpu pointer
-  cudaMalloc((void**)&bicg->dftemp,bicg->nrows*sizeof(double));
-
-  cudaMalloc((void**)&bicg->djA,bicg->nnz*sizeof(int));
-  cudaMalloc((void**)&bicg->diA,(bicg->nrows+1)*sizeof(int));
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-
-  //ODE concs arrays
-  cudaMalloc((void**)&bicg->dcv_y,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dx,bicg->nrows*sizeof(double));
-
-  cudaMalloc((void**)&bicg->dewt,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dacor,bicg->nrows*sizeof(double));
-  cudaMalloc((void**)&bicg->dtempv,bicg->nrows*sizeof(double));
-
-  */
-
-  //test_print2();
-
-}
-
-void print_counterBiConjGrad(CVodeMem cv_mem)
-{
-
-  itsolver *bicg = &cv_mem->bicg;
-
-  printf("counterBiConjGrad2 %d\n", bicg->counterBiConjGrad);
-
-}
-
-#endif
 
 /*---------------------------------------------------------------
  CVDlsSetLinearSolver specifies the direct linear solver.
@@ -264,11 +145,6 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS,
   }
   /* Attach linear solver memory to integrator memory */
   cv_mem->cv_lmem = cvdls_mem;
-
-#ifdef PMC_USE_GPU
-  alloc_solver_gpu_cvode(cv_mem);
-  //print_counterBiConjGrad(cv_mem);
-#endif
 
   return(CVDLS_SUCCESS);
 }
@@ -731,35 +607,6 @@ int cvDlsInitialize(CVodeMem cv_mem)
   return(cvdls_mem->last_flag);
 }
 
-/*
-
-void cvdcheck_inputd(double *x, int len, int var_id){
-
-  int n_zeros=0;
-  for (int i=0; i<5; i++){
-    if(x[i]==0.0)
-      n_zeros++;
-    printf("%d[%d]=%-le\n",var_id,i,x[i]);
-  }
-  if(n_zeros==len)
-    printf("%d is all zeros\n",var_id);
-
-
-}
-
-void cvdcheck_inputi(int *x, int len, int var_id){
-
-  int n_zeros=0;
-  for (int i=0; i<5; i++){
-    if(x[i]==0.0)
-      n_zeros++;
-    printf("%d[%d]=%d\n",var_id,i,x[i]);
-  }
-  if(n_zeros==len)
-    printf("%d is all zeros\n",var_id);
-
-}
- */
 
 /*-----------------------------------------------------------------
   cvDlsSetup
@@ -826,15 +673,14 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
       return(-1);
     }
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     double startJac=MPI_Wtime();
 #endif
 
-    //not working cvdls_mem->J_data->gamma = cv_mem->cv_gamma;
     retval = cvdls_mem->jac(cv_mem->cv_tn, ypred,
                             fpred, cvdls_mem->A,
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     cv_mem->timeJac+= MPI_Wtime() - startJac;
     cv_mem->counterJac++;
 #endif
@@ -862,9 +708,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
   // Scale and add I to get A = I - gamma*J //
   retval = SUNMatScaleAddI(-cv_mem->cv_gamma, cvdls_mem->A);
-
-  //cudaMemcpy(bicg->A, bicg->dA, md->jac_size, cudaMemcpyDeviceToHost);
-
   if (retval) {
     cvProcessError(cv_mem, CVDLS_SUNMAT_FAIL, "CVDLS",
                    "cvDlsSetup",  MSGD_MATSCALEADDI_FAILED);
@@ -875,56 +718,15 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef PMC_USE_GPU
-
-#ifdef PMC_PROFILING
-  double startKLUSparseSetup = MPI_Wtime();
-#endif
-
-  itsolver *bicg = &cv_mem->bicg;
-
-
-//  HANDLE_ERROR(cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice));
-
-
-  //printf("bicg->nrows %d",bicg->nrows);
-  //printf("SM_NP_S(cvdls_mem->A) %d",SM_NP_S(cvdls_mem->A));
-
-
-  //cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-
-  /*
-  int i=0;
-  check_inputd(bicg->A,bicg->nnz,i++);
-  check_inputi(bicg->jA,bicg->nnz,i++);
-  check_inputi(bicg->iA,(bicg->nrows+1),i++);
-   */
-
-  gpu_diagprecond(bicg->nrows,bicg->dA,bicg->djA,bicg->diA,bicg->ddiag,bicg->blocks,bicg->threads); //Setup linear solver
-
-  cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
-
-#ifdef PMC_PROFILING
-  cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
-  cv_mem->counterKLUSparseSetup++;
-#endif
-
-#else
-
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
   cv_mem->counterKLUSparseSetup++;
-#endif
-
 #endif
 
 return(cvdls_mem->last_flag);
@@ -957,144 +759,16 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
-#ifdef PMC_USE_GPU
-
-  itsolver *bicg = &cv_mem->bicg;
-
-  cudaMemcpy(bicg->dA,bicg->A,bicg->nnz*sizeof(double),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->djA,bicg->jA,bicg->nnz*sizeof(int),cudaMemcpyHostToDevice);
-  cudaMemcpy(bicg->diA,bicg->iA,(bicg->nrows+1)*sizeof(int),cudaMemcpyHostToDevice);
-  double *b_ptr = N_VGetArrayPointer(b);//tempv
-
-  /*
-  for(int i=0; i<bicg->nrows; i++){
-    if(b_ptr[i]==0.0) b_ptr[i]=1.0E-60;
-  }
-*/
-
-  cudaMemcpy(bicg->dtempv,b_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  double* x_ptr = N_VGetArrayPointer(cvdls_mem->x);
-  retval=0;
-
-  //cudaMemcpy(bicg->dx,x_ptr,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-  //cudaMemset(bicg->dx, 0.0, bicg->nrows*sizeof(double));
-
-
-#ifdef PMC_PROFILING
-  double startKLUSparseSolve = MPI_Wtime();
-#endif
-
-#ifdef PMC_PROFILING
-  cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
-  cv_mem->counterKLUSparseSolve++;
-#endif
-
-#ifndef PMC_DEBUG_GPU
-#ifdef CHECK_LS_GPU_CPU
-
-    //cudaMemcpy(x,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
-    //printf("HI\n");
-    //printf("bicg->counterBiConjGrad %d\n",bicg->counterBiConjGrad);
-    //if(bicg->counterBiConjGrad<=100){
-    if(bicg->counterBiConjGrad<1){
-
-      printf("CHECK_LS_GPU_CPU\n");
-
-      /*
-      int i=0;
-      check_inputd(bicg->A,bicg->nnz,i++);
-      check_inputi(bicg->jA,bicg->nnz,i++);
-      check_inputi(bicg->iA,bicg->nnz,i++);
-       */
-
-      double *dx_init;
-      cudaMalloc((void**)&dx_init,bicg->nrows*sizeof(double));
-      gpu_yequalsx(dx_init, bicg->dx, bicg->nrows, bicg->blocks, bicg->threads);
-
-      //Compute case 1
-      // call the generic linear system solver, and copy b to x
-      retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cv_mem->cv_tempv2, b, ZERO);
-      double *aux_x1=N_VGetArrayPointer(cv_mem->cv_tempv2);
-
-      //retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
-      //double *aux_x1=N_VGetArrayPointer(cvdls_mem->x);
-
-      //Compute case 2
-      double *b_ptr2 = N_VGetArrayPointer(b);//tempv
-      cudaMemcpy(bicg->dtempv,b_ptr2,bicg->nrows*sizeof(double),cudaMemcpyHostToDevice);
-
-      solveGPU_block(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
-      //solveGPU(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
-
-      //Save result
-      double *aux_x2=(double*)malloc(bicg->nrows*sizeof(double));
-      cudaMemcpy(aux_x2,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
-      gpu_yequalsx(bicg->dx, dx_init, bicg->nrows, bicg->blocks, bicg->threads);
-
-      //Print accuracy
-      printf("aux_x1[0] aux_x2[0] %-le %-le\n", aux_x1[0], aux_x2[0]);
-      double error;
-      double max_error = aux_x1[0]- aux_x2[0];
-      int max_error_i = 0;
-      double aux1_max_error = 0.0;
-      double aux2_max_error = 0.0;
-      for (int i=0; i<bicg->nrows; i++){
-        error = fabs(aux_x1[i]-aux_x2[i]);
-        //printf("%d %-le %-le\n", i, aux_x1[i], aux_x2[i]);
-        if (error > max_error){
-          max_error = error;
-          max_error_i = i;
-          aux1_max_error = aux_x1[i];
-          aux2_max_error = aux_x2[i];
-        }
-      }
-      //Local max error
-      //printf("Max Error linsolver dx %-le at position %d\n",max_error, max_error_i);
-      printf("[%d] max_error %-le aux1_max_error aux2_max_error %-le %-le  \n",
-              max_error_i, max_error, aux1_max_error, aux2_max_error);
-
-      //Iter linsolve
-      cudaFree(dx_init);
-      free(aux_x2);
-
-    }
-
-#endif
-
-#endif
-
-  //printf("AAA\n");
-
-  //solveGPU(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
-  solveGPU_block(bicg,bicg->dA,bicg->djA,bicg->diA,bicg->dx,bicg->dtempv);
-
-  cudaMemcpy(x_ptr,bicg->dx,bicg->nrows*sizeof(double),cudaMemcpyDeviceToHost);
-
-  /*
-  for(int i=0; i<bicg->nrows; i++){
-    if(x_ptr[i]==0.0) x_ptr[i]=1.0E-60;
-  }
-*/
-
-  bicg->counterBiConjGrad++;
-
-  // call the generic linear system solver, and copy b to x
-  //retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
-
-#else
-
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
   cv_mem->counterKLUSparseSolve++;
-#endif
-
 #endif
 
   //copy x into b

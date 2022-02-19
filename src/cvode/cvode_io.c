@@ -818,7 +818,7 @@ int CVodeGetCurrentTime(void *cvode_mem, realtype *tcur)
   return(CV_SUCCESS);
 }
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
 
 int CVodeGetcounterLS(void *cvode_mem, int *tcur)
 {

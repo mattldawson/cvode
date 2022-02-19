@@ -299,7 +299,7 @@ void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype
 
 #include <time.h>
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
 #include <mpi.h>
 #endif
 
@@ -595,7 +595,7 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->cv_irfnd   = 0;
 
 //Profiling
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   cv_mem->counterNewtonIt=0;
   cv_mem->counterLinSolSetup=0;
   cv_mem->counterLinSolSolve=0;
@@ -1022,7 +1022,7 @@ int CVodeRootInit(void *cvode_mem, int nrtfn, CVRootFn g)
   return(CV_SUCCESS);
 }
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
 
 void exportCounters(CVodeMem cv_mem) {
 
@@ -1450,13 +1450,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
         cvProcessError(cv_mem, CV_WARNING, "CVODE", "CVode", MSGCV_HNIL_DONE);
     }
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     double startcvStep=MPI_Wtime();
 #endif
     /* Call cvStep to take a step */
     kflag = cvStep(cv_mem);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     cv_mem->timecvStep+= MPI_Wtime() - startcvStep;
     cv_mem->countercvStep++;
 #endif
@@ -1642,7 +1642,7 @@ void CVodeFree(void **cvode_mem)
 
   cv_mem = (CVodeMem) (*cvode_mem);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   exportCounters(cv_mem);
 #endif
 
@@ -2686,7 +2686,7 @@ static int cvNls(CVodeMem cv_mem, int nflag)
 {
   int flag = CV_SUCCESS;
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   double startNewtonIt=MPI_Wtime();
 #endif
   switch(cv_mem->cv_iter) {
@@ -2698,7 +2698,7 @@ static int cvNls(CVodeMem cv_mem, int nflag)
     break;
   }
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   cv_mem->timeNewtonIt+= MPI_Wtime() - startNewtonIt;
   cv_mem->counterNewtonIt++;
 #endif
@@ -2865,13 +2865,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     double startDerivNewton=MPI_Wtime();
 #endif
 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     cv_mem->timeDerivNewton+= MPI_Wtime() - startDerivNewton;
     cv_mem->counterDerivNewton++;
 #endif
@@ -2883,7 +2883,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
     if (callSetup) {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
       double startLinSolSetup=MPI_Wtime();
 #endif
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
@@ -2891,7 +2891,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
                               vtemp1, vtemp2, vtemp3);
       //ier = linsolsetup_gpu(cv_mem, convfail, vtemp1, vtemp2, vtemp3);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
       cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
       cv_mem->counterLinSolSetup++;
 #endif
@@ -2913,13 +2913,13 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     /* Do the Newton iteration */
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     double startLinSolSolve=MPI_Wtime();
 #endif
 
     ier = cvNewtonIteration(cv_mem);
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     cv_mem->timeLinSolSolve+= MPI_Wtime() - startLinSolSolve;
     cv_mem->counterLinSolSolve++;
 #endif
@@ -3055,13 +3055,13 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     double startDerivSolve=MPI_Wtime();
 #endif
 
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
     cv_mem->timeDerivSolve+= MPI_Wtime() - startDerivSolve;
     cv_mem->counterDerivSolve++;
 #endif

@@ -74,14 +74,6 @@ typedef struct CVDlsMemRec {
   Prototypes of internal functions
   -----------------------------------------------------------------*/
 
-void alloc_solver_gpu_cvode(void *cvode_mem);
-
-/*
-void test_print(){
-  printf("hola\n");
-}
- */
-
 /* difference-quotient Jacobian approximation routines */
 int cvDlsDQJac(realtype t, N_Vector y, N_Vector fy, SUNMatrix Jac,
                void *data, N_Vector tmp1, N_Vector tmp2, N_Vector tmp3);

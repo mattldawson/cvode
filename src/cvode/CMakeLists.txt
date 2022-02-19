@@ -21,7 +21,6 @@
 INSTALL(CODE "MESSAGE(\"\nInstall CVODE\n\")")
 
 # Add variable cvode_SOURCES with the sources for the CVODE library
-
 SET(cvode_SOURCES
   cvode.c
   cvode_bandpre.c
@@ -30,8 +29,6 @@ SET(cvode_SOURCES
   cvode_direct.c        
   cvode_io.c
   cvode_spils.c
-  #cvode_gpu.cu
-  #test_cpu.c
   )
 
 if (CUDA_FOUND)

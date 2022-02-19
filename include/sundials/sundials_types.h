@@ -127,8 +127,6 @@ typedef int sunindextype;
 
 #endif
 
-//typedef int sunindextype;
-
 
 /*
  *------------------------------------------------------------------

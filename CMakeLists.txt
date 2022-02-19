@@ -129,10 +129,11 @@ OPTION(SUNDIALS_DEBUG "Include debugging functions" OFF)
 # Profiling functions?
 # ---------------------------------------------------------------
 
-OPTION(PMC_PROFILING "Include debugging functions" OFF)
-IF(PMC_PROFILING)
-  ADD_DEFINITIONS(-DPMC_PROFILING)
-ENDIF(PMC_PROFILING)
+OPTION(CAMP_PROFILING "Include debugging functions" OFF)
+IF(CAMP_PROFILING)
+  MESSAGE("CAMP_PROFILING ENABLED")
+  ADD_DEFINITIONS(-DCAMP_PROFILING)
+ENDIF(CAMP_PROFILING)
 
 # ---------------------------------------------------------------
 # Which modules to build?
@@ -1344,7 +1345,6 @@ IF(EXAMPLES_ENABLED)
         SET(MPI_INC_DIR ".")
         SET(MPI_LIB_DIR ".")
         SET(MPI_LIBS "")
-        #SET(MPI_FLAGS "")
         SET(MPI_FLAGS "-lcudart -lcublas")
       ELSE(MPI_MPICC)
         SET(MPICC "${CMAKE_C_COMPILER}")

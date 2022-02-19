@@ -28,21 +28,9 @@
 #include <stdarg.h>
 #include <cvode/cvode.h>
 
-//#include "itsolver_gpu.h"
-
-
-
 #ifdef __cplusplus  /* wrapper to enable C++ usage */
 extern "C" {
 #endif
-
-#include "cuda_structs.h"
-//#include "itsolver_gpu.h"
-
-#ifdef PMC_USE_GPU
-
-#endif
-
 
 /*
  * =================================================================
@@ -290,9 +278,7 @@ typedef struct CVodeMemRec {
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
 
-  itsolver bicg;
-
-#ifdef PMC_PROFILING
+#ifdef CAMP_PROFILING
   int counterNewtonIt;
   int counterLinSolSetup;
   int counterLinSolSolve;
