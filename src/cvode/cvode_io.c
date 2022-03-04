@@ -857,7 +857,7 @@ int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters)
   tcur[13] = (double)(cv_mem->timecvStep);
 
   counters[0] = cv_mem->counterLinSolSolve;
-  counters[3] = cv_mem->countercvStep;
+  counters[2] = cv_mem->countercvStep;
 
   //cv_mem->timeKLUSparseSetup = 0.0;
   //cv_mem->timeKLUSparseSolve = 0.0;
