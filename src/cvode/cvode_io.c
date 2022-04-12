@@ -859,8 +859,21 @@ int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters)
   counters[0] = cv_mem->counterLinSolSolve;
   counters[2] = cv_mem->countercvStep;
 
-  //cv_mem->timeKLUSparseSetup = 0.0;
-  //cv_mem->timeKLUSparseSolve = 0.0;
+  return(CV_SUCCESS);
+}
+
+int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters)
+{
+  CVodeMem cv_mem;
+
+  cv_mem = (CVodeMem) cvode_mem;
+
+  cv_mem->timeKLUSparseSetup=0.;
+  cv_mem->timeKLUSparseSolve=0.;
+  cv_mem->timecvStep=0.;
+
+  cv_mem->counterLinSolSolve=0;
+  cv_mem->countercvStep=0;
 
   return(CV_SUCCESS);
 }

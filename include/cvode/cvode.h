@@ -759,6 +759,7 @@ SUNDIALS_EXPORT int CVodeGetCurrentTime(void *cvode_mem, realtype *tcur);
 SUNDIALS_EXPORT int CVodeGetcounterLS(void *cvode_mem, int *tcur);
 SUNDIALS_EXPORT int CVodeGettimeLS(void *cvode_mem, double *tcur);
 SUNDIALS_EXPORT int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters);
+SUNDIALS_EXPORT int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters);
 SUNDIALS_EXPORT int CVodeGetTolScaleFactor(void *cvode_mem, realtype *tolsfac);
 SUNDIALS_EXPORT int CVodeGetErrWeights(void *cvode_mem, N_Vector eweight);
 SUNDIALS_EXPORT int CVodeGetEstLocalErrors(void *cvode_mem, N_Vector ele);
