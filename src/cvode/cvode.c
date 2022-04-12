@@ -1036,29 +1036,6 @@ void exportCounters(CVodeMem cv_mem) {
   MPI_Reduce(&cv_mem->timecvStep, &timecvStep, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
   MPI_Reduce(&timeKLUSparse_tmp, &timeKLUSparse, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
-  if (rank == 0){
-
-    printf("PROFILING CVODE CPU:\n");
-    printf("timecvStep %lf, countercvStep %d\n",timecvStep,cv_mem->countercvStep);
-
-    /*printf("timeNewtonIt %lf, counterNewtonIt %d\n",cv_mem->timeNewtonIt,cv_mem->counterNewtonIt);
-    printf("timeLinSolSolve %lf, counterLinSolSolve %d\n",cv_mem->timeLinSolSolve,cv_mem->counterLinSolSolve);
-    printf("timeDerivNewton %lf, counterDerivNewton %d\n",cv_mem->timeDerivNewton,cv_mem->counterDerivNewton);
-    printf("timeLinSolSetup %lf, counterLinSolSetup %d\n",cv_mem->timeLinSolSetup,cv_mem->counterLinSolSetup);
-    printf("timeDerivSolve %lf, counterDerivSolve %d\n",cv_mem->timeDerivSolve,cv_mem->counterDerivSolve);
-    printf("timeKLUSparseSetup %lf, counterKLUSparseSetup %d\n",cv_mem->timeKLUSparseSetup,cv_mem->counterKLUSparseSetup);
-    printf("timeKLUSparseSolve %lf, counterKLUSparseSolve %d\n",cv_mem->timeKLUSparseSolve,cv_mem->counterKLUSparseSolve);
-    printf("timeJac %lf, counterJac %d\n",cv_mem->timeJac,cv_mem->counterJac);
-    */
-
-    printf("timeKLUSparse %lf, counterKLUSparseSolve_tmp %d\n",timeKLUSparse_tmp,cv_mem->counterKLUSparseSolve);
-    printf("timeKLUSparse %lf, counterKLUSparseSolve %d\n",timeKLUSparse,cv_mem->counterKLUSparseSolve);
-
-    printf("-----------------\n");
-
-  }
-
-
 }
 
 #endif
