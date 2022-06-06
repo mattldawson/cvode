@@ -828,8 +828,6 @@ int CVodeGetcounterLS(void *cvode_mem, int *tcur)
 
   *tcur = cv_mem->counterLinSolSolve;
 
-  //cv_mem->counterLinSolSolve=0;
-
   return(CV_SUCCESS);
 }
 
@@ -840,9 +838,6 @@ int CVodeGettimeLS(void *cvode_mem, double *tcur)
   cv_mem = (CVodeMem) cvode_mem;
 
   *tcur = (double)(cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve);
-
-  //cv_mem->timeKLUSparseSetup = 0.0;
-  //cv_mem->timeKLUSparseSolve = 0.0;
 
   return(CV_SUCCESS);
 }
@@ -874,6 +869,39 @@ int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters)
 
   cv_mem->counterLinSolSolve=0;
   cv_mem->countercvStep=0;
+
+  return(CV_SUCCESS);
+}
+
+#else
+
+int CVodeGetcounterLS(void *cvode_mem, int *tcur)
+{
+  *tcur = 0;
+
+  return(CV_SUCCESS);
+}
+
+int CVodeGettimeLS(void *cvode_mem, double *tcur)
+{
+  *tcur = 0;
+
+  return(CV_SUCCESS);
+}
+
+int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters)
+{
+  tcur[0] = 0.;
+  tcur[13] = 0.;
+
+  counters[0] = 0;
+  counters[2] = 0;
+
+  return(CV_SUCCESS);
+}
+
+int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters)
+{
 
   return(CV_SUCCESS);
 }
