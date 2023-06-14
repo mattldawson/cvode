@@ -69,7 +69,7 @@ if(KLU_LIBRARIES)
   endif(LTEST_OK)
 else(KLU_LIBRARIES)
   PRINT_WARNING("KLU LIBRARIES NOT Found. Please check library path" "${KLU_LIBRARY_DIR} ")
-  message(FATAL_ERROR "Looking for KLU libraries... FAILED")
+  message(STATUS "Looking for KLU libraries... FAILED")
 endif(KLU_LIBRARIES)
  
   

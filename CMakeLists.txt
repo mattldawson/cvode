@@ -39,6 +39,18 @@ endif()
 # sets PROJECT_SOURCE_DIR and PROJECT_BINARY_DIR variables
 PROJECT(sundials C)
 
+#Set options here instead of outside
+SET(KLU_ENABLE ON)
+SET(KLU_P ${CMAKE_CURRENT_SOURCE_DIR}/../SuiteSparse)
+SET(EXAMPLES_INSTALL ON)
+SET(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
+#SET(EXAMPLES_INSTALL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/install/examples)
+#SET(MPI_ENABLE ON) #todo fix to allow CAMP_PROFILING
+#SET(CAMP_PROFILING ON)
+
+#Fix copy of linked libraries during install of libraries
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # Set some variables with info on the SUNDIALS project
 SET(PACKAGE_BUGREPORT "woodward6@llnl.gov")
 SET(PACKAGE_NAME "SUNDIALS")
@@ -178,13 +190,6 @@ ELSE()
   SET(BUILD_KINSOL OFF)
 ENDIF()
 
-# CPODES is always OFF for now.  (commented out for Release); ToDo: better way to do this?
-#IF(IS_DIRECTORY "${sundials_SOURCE_DIR}/src/cpodes")
-#  OPTION(BUILD_CPODES  "Build the CPODES library"  OFF)
-#ELSE()
-#  SET(BUILD_CPODES OFF)
-#ENDIF()
-
 # ---------------------------------------------------------------
 # xSDK specific options
 # ---------------------------------------------------------------
@@ -281,7 +286,7 @@ ENDIF()
 # Options to build static and/or shared libraries
 # ---------------------------------------------------------------
 
-OPTION(BUILD_STATIC_LIBS "Build static libraries" ON)
+OPTION(BUILD_STATIC_LIBS "Build static libraries" OFF)
 OPTION(BUILD_SHARED_LIBS "Build shared libraries" ON)
 
 # Prepare substitution variable SUNDIALS_EXPORT for sundials_config.h
@@ -414,7 +419,7 @@ ENDIF()
 # ---------------------------------------------------------------
 # Enable KLU support?
 # ---------------------------------------------------------------
-OPTION(KLU_ENABLE "Enable KLU support" OFF)
+OPTION(KLU_ENABLE "Enable KLU support" ON)
 
 # KLU does not support single or extended precision
 IF(KLU_ENABLE AND
@@ -1031,6 +1036,8 @@ ENDIF()
 
 IF(KLU_ENABLE)
 
+  set(KLU_INCLUDE_DIR ${KLU_P}/include)
+  set(KLU_LIBRARY_DIR ${KLU_P}/lib)
   SHOW_VARIABLE(KLU_INCLUDE_DIR PATH "KLU include directory"
     "${KLU_INCLUDE_DIR}")
   SHOW_VARIABLE(KLU_LIBRARY_DIR PATH
