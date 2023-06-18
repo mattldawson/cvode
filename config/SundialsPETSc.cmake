@@ -33,7 +33,7 @@ if(PETSC_LIBRARIES)
   file(MAKE_DIRECTORY ${PETSCTest_DIR})
   # Create a CMakeLists.txt file 
   file(WRITE ${PETSCTest_DIR}/CMakeLists.txt
-    "CMAKE_MINIMUM_REQUIRED(VERSION 2.4)\n"
+    "CMAKE_MINIMUM_REQUIRED(VERSION 3.14)\n"
     "PROJECT(ltest C)\n"
     "SET(CMAKE_VERBOSE_MAKEFILE ON)\n"
     "SET(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\")\n"

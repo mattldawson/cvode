@@ -96,7 +96,7 @@ if(CMAKE_Fortran_COMPILER)
   # Create a CMakeLists.txt file which will generate the "flib" library
   # and an executable "ftest"
   file(WRITE ${FortranTest_DIR}/CMakeLists.txt
-    "CMAKE_MINIMUM_REQUIRED(VERSION 2.4)\n"
+    "CMAKE_MINIMUM_REQUIRED(VERSION 3.14)\n"
     "PROJECT(ftest Fortran)\n"
     "SET(CMAKE_VERBOSE_MAKEFILE ON)\n"
     "SET(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\")\n"
@@ -141,7 +141,7 @@ if(CMAKE_Fortran_COMPILER)
     # Infer Fortran name-mangling scheme for symbols WITHOUT underscores.
     # Overwrite CMakeLists.txt with one which will generate the "ctest1" executable
     file(WRITE ${FortranTest_DIR}/CMakeLists.txt
-      "CMAKE_MINIMUM_REQUIRED(VERSION 2.4)\n"
+      "CMAKE_MINIMUM_REQUIRED(VERSION 3.14)\n"
       "PROJECT(ctest1 C)\n"
       "SET(CMAKE_VERBOSE_MAKEFILE ON)\n"
       "SET(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\")\n"
@@ -189,7 +189,7 @@ if(CMAKE_Fortran_COMPILER)
     # Infer Fortran name-mangling scheme for symbols WITH underscores.
     # Practically a duplicate of the previous steps.
     file(WRITE ${FortranTest_DIR}/CMakeLists.txt
-      "CMAKE_MINIMUM_REQUIRED(VERSION 2.4)\n"
+      "CMAKE_MINIMUM_REQUIRED(VERSION 3.14)\n"
       "PROJECT(ctest2 C)\n"
       "SET(CMAKE_VERBOSE_MAKEFILE ON)\n"
       "SET(CMAKE_BUILD_TYPE \"${CMAKE_BUILD_TYPE}\")\n"
