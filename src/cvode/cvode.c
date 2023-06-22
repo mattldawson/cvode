@@ -1075,7 +1075,9 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * 1. Check and process inputs
    * -------------------------------------
    */
-
+#ifndef DEBUG_NVECTOR
+  double *y0p=N_VGetArrayPointer(yout); //debug (gprof, ddt...)
+#endif
   /* Check if cvode_mem exists */
   if (cvode_mem == NULL) {
     cvProcessError(NULL, CV_MEM_NULL, "CVODE", "CVode", MSGCV_NO_MEM);
