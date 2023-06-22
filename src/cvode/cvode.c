@@ -1069,14 +1069,13 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
   int ewtsetOK;
   realtype troundoff, tout_hin, rh, nrm;
   booleantype inactive_roots;
-
   /*
    * -------------------------------------
    * 1. Check and process inputs
    * -------------------------------------
    */
-#ifndef DEBUG_NVECTOR
-  double *y0p=N_VGetArrayPointer(yout); //debug (gprof, ddt...)
+#ifdef DEBUG_NVECTOR
+  double *y0p=N_VGetArrayPointer(yout);
 #endif
   /* Check if cvode_mem exists */
   if (cvode_mem == NULL) {
@@ -1363,6 +1362,19 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    *         - check if in ONE_STEP mode (must return)
    * --------------------------------------------------
    */
+
+#ifdef DEBUG_NVECTOR
+  cv_mem->cv_ewtp=N_VGetArrayPointer(cv_mem->cv_ewt);
+  cv_mem->cv_zn0p=N_VGetArrayPointer(cv_mem->cv_zn[0]);
+  cv_mem->cv_yp=N_VGetArrayPointer(cv_mem->cv_y);
+  cv_mem->cv_acorp=N_VGetArrayPointer(cv_mem->cv_acor);
+  cv_mem->cv_acor_initp=N_VGetArrayPointer(cv_mem->cv_acor_init);
+  cv_mem->cv_last_ynp=N_VGetArrayPointer(cv_mem->cv_last_yn);
+  cv_mem->cv_tempvp=N_VGetArrayPointer(cv_mem->cv_tempv);
+  cv_mem->cv_tempv1p=N_VGetArrayPointer(cv_mem->cv_tempv1);
+  cv_mem->cv_tempv2p=N_VGetArrayPointer(cv_mem->cv_tempv2);
+  cv_mem->cv_ftempp=N_VGetArrayPointer(cv_mem->cv_ftemp);
+#endif
 
   nstloc = 0;
   for(;;) {

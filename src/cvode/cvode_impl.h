@@ -62,6 +62,19 @@ extern "C" {
 
 typedef struct CVodeMemRec {
 
+#ifdef DEBUG_NVECTOR
+  double *cv_ewtp;
+  double *cv_zn0p;
+  double *cv_yp;
+  double *cv_acorp;
+  double *cv_acor_initp;
+  double *cv_last_ynp;
+  double *cv_tempvp;
+  double *cv_tempv1p;
+  double *cv_tempv2p;
+  double *cv_ftempp;
+#endif
+
   realtype cv_uround;    /* machine unit roundoff */
 
   /*--------------------------
