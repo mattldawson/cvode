@@ -67,6 +67,11 @@ typedef struct CVodeMemRec {
   double *savedJp;
   double *cv_ewtp;
   double *cv_zn0p;
+  double *cv_zn1p;
+  double *cv_zn2p;
+  double *cv_zn3p;
+  double *cv_zn4p;
+  double *cv_zn5p;
   double *cv_yp;
   double *cv_acorp;
   double *cv_acor_initp;

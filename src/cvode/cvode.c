@@ -1074,9 +1074,6 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * 1. Check and process inputs
    * -------------------------------------
    */
-#ifdef DEBUG_NVECTOR
-  double *y0p=N_VGetArrayPointer(yout);
-#endif
   /* Check if cvode_mem exists */
   if (cvode_mem == NULL) {
     cvProcessError(NULL, CV_MEM_NULL, "CVODE", "CVode", MSGCV_NO_MEM);
@@ -1366,6 +1363,11 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 #ifdef DEBUG_NVECTOR
   cv_mem->cv_ewtp=N_VGetArrayPointer(cv_mem->cv_ewt);
   cv_mem->cv_zn0p=N_VGetArrayPointer(cv_mem->cv_zn[0]);
+  cv_mem->cv_zn1p=N_VGetArrayPointer(cv_mem->cv_zn[1]);
+  cv_mem->cv_zn2p=N_VGetArrayPointer(cv_mem->cv_zn[2]);
+  cv_mem->cv_zn3p=N_VGetArrayPointer(cv_mem->cv_zn[3]);
+  cv_mem->cv_zn4p=N_VGetArrayPointer(cv_mem->cv_zn[4]);
+  cv_mem->cv_zn5p=N_VGetArrayPointer(cv_mem->cv_zn[5]);
   cv_mem->cv_yp=N_VGetArrayPointer(cv_mem->cv_y);
   cv_mem->cv_acorp=N_VGetArrayPointer(cv_mem->cv_acor);
   cv_mem->cv_acor_initp=N_VGetArrayPointer(cv_mem->cv_acor_init);
