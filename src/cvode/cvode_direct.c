@@ -604,6 +604,12 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
+#ifdef DEBUG_NVECTOR
+  cv_mem->Ap=((SUNMatrixContent_Dense)(cvdls_mem->A->content))->data;
+  cv_mem->savedJp=((SUNMatrixContent_Dense)(cvdls_mem->savedJ->content))->data;
+  //cv_mem->Alp= ((SUNMatrixContent_Dense)(cvdls_mem->A->content))->ldata;
+  //cv_mem->Acolsp=((SUNMatrixContent_Dense)(cvdls_mem->A->content))->cols;
+#endif
   return(cvdls_mem->last_flag);
 }
 
