@@ -82,6 +82,25 @@ typedef struct CVodeMemRec {
   double *cv_ftempp;
 #endif
 
+#ifndef USE_BCG
+#define BLOCKDIMX 73
+  double ddiag[BLOCKDIMX];
+  double dr0[BLOCKDIMX];
+  double dr0h[BLOCKDIMX];
+  double dn0[BLOCKDIMX];
+  double dp0[BLOCKDIMX];
+  double dt[BLOCKDIMX];
+  double ds[BLOCKDIMX];
+  double dy[BLOCKDIMX];
+  double dx[BLOCKDIMX];
+  double *dA;
+  int *diA;
+  int *djA;
+  double *dtempv;
+  int nnz;
+#undef BLOCKDIMX
+#endif
+
   realtype cv_uround;    /* machine unit roundoff */
 
   /*--------------------------
