@@ -613,6 +613,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
 #ifndef USE_BCG
+  printf("A\n");
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -831,7 +832,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 #endif
 
 #ifndef USE_BCG
-  printf("DEV USE_BCG\n");
   CVodeMem md = cv_mem;
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
@@ -878,20 +878,22 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     rho0 = rho1;
     it++;
   } while(it<BCG_MAXIT && temp1>BCG_TOLMAX);
+  double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
   for (int i = 0; i < BLOCKDIMX; i++) {
-    md->dtempv[i] = md->dx[i];
+    xp[i] = md->dx[i];
   }
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
-  //copy x into b
-  N_VScale(ONE, cvdls_mem->x, b);
 #endif
 
 #ifdef CAMP_PROFILING
   cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
   cv_mem->counterKLUSparseSolve++;
 #endif
+
+  //copy x into b
+  N_VScale(ONE, cvdls_mem->x, b);
 
   //scale the correction to account for change in gamma
   if ((cv_mem->cv_lmm == CV_BDF) && (cv_mem->cv_gamrat != ONE))
