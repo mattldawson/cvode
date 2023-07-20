@@ -1360,10 +1360,8 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * --------------------------------------------------
    */
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
-  //CVDlsMem cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
-  //cv_mem->xp = N_VGetArrayPointer(cvdls_mem->x);
 #endif
 #ifdef DEBUG_NVECTOR
   double *youtp=N_VGetArrayPointer(yout);

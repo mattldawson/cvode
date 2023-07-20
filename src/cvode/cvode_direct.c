@@ -53,12 +53,20 @@
 
 #include <time.h>
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 #include <math.h>
 //static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
 #define BCG_MAXIT 1000
 #define BCG_TOLMAX 1.0E-30
+#endif
+
+#ifndef CAMP_DEBUG_PRINTS
+void print_double(double *x, int len, const char *s){
+  for (int i=0; i<len; i++){
+    printf("%s[%d]=%le\n",s,i,x[i]);
+  }
+}
 #endif
 
 /*=================================================================
@@ -612,7 +620,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifndef USE_BCG
+#ifdef USE_BCG
   printf("A\n");
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
@@ -749,7 +757,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -777,7 +785,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 void cudaDeviceSpmv_2(double* dx, double* db, double* dA, int* djA, int* diA){
   for(int row=0;row<BLOCKDIMX;row++){
     dx[row] = 0.0;
@@ -831,7 +839,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   CVodeMem md = cv_mem;
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
@@ -885,6 +893,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
+  double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
 #endif
 
 #ifdef CAMP_PROFILING
@@ -892,6 +901,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
+  print_double(xp,73,"xp");
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
 
