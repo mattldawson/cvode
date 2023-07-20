@@ -82,7 +82,7 @@ typedef struct CVodeMemRec {
   double *cv_ftempp;
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #define BLOCKDIMX 73
   double ddiag[BLOCKDIMX];
   double dr0[BLOCKDIMX];

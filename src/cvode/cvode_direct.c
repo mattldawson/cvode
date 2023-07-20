@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #include <math.h>
 //static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
@@ -61,10 +61,10 @@
 #define BCG_TOLMAX 1.0E-30
 #endif
 
-#ifndef CAMP_DEBUG_PRINTS
+#ifndef CAMP_DEBUG_PRINT
 void print_double(double *x, int len, const char *s){
   for (int i=0; i<len; i++){
-    printf("%s[%d]=%le\n",s,i,x[i]);
+    printf("%s[%d]=%.16le\n",s,i,x[i]);
   }
 }
 #endif
@@ -620,7 +620,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifdef USE_BCG
+#ifndef USE_BCG
   printf("A\n");
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
@@ -757,11 +757,14 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
   int *djA = cv_mem->djA;
+  for(int i=0;i<BLOCKDIMX;i++){
+    cv_mem->ddiag[i] = 1.0;
+  }
   for(int row=0;row<BLOCKDIMX;row++) {
     for (int j = diA[row]; j < diA[row + 1]; j++) {
       if (djA[j] == row) {
@@ -785,7 +788,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 void cudaDeviceSpmv_2(double* dx, double* db, double* dA, int* djA, int* diA){
   for(int row=0;row<BLOCKDIMX;row++){
     dx[row] = 0.0;
@@ -794,7 +797,7 @@ void cudaDeviceSpmv_2(double* dx, double* db, double* dA, int* djA, int* diA){
     for (int j = diA[row]; j < diA[row + 1]; j++) {
         double mult = db[row] * dA[j];
         int i_dx=djA[j];
-        dx[djA[j]] += mult;
+        dx[i_dx] += mult;
     }
   }
 }
@@ -839,7 +842,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   CVodeMem md = cv_mem;
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
@@ -886,6 +889,11 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     rho0 = rho1;
     it++;
   } while(it<BCG_MAXIT && temp1>BCG_TOLMAX);
+  if(it>=BCG_MAXIT){
+    printf("it>=BCG_MAXIT\n %d>%d",it,BCG_MAXIT);
+    exit(0);
+  }
+  retval=0;
   double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
   for (int i = 0; i < BLOCKDIMX; i++) {
     xp[i] = md->dx[i];
@@ -901,7 +909,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
+#ifndef CAMP_DEBUG_PRINT
   print_double(xp,73,"xp");
+#endif
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
 
