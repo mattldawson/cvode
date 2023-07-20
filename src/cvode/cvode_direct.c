@@ -61,7 +61,7 @@
 #define BCG_TOLMAX 1.0E-30
 #endif
 
-#ifndef CAMP_DEBUG_PRINT
+#ifdef CAMP_DEBUG_PRINT
 void print_double(double *x, int len, const char *s){
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.16le\n",s,i,x[i]);
@@ -621,7 +621,6 @@ int cvDlsInitialize(CVodeMem cv_mem)
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
 #ifndef USE_BCG
-  printf("A\n");
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -909,7 +908,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
-#ifndef CAMP_DEBUG_PRINT
+#ifdef CAMP_DEBUG_PRINT
   print_double(xp,73,"xp");
 #endif
   //copy x into b
