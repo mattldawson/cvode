@@ -97,7 +97,6 @@ typedef struct CVodeMemRec {
   int *diA;
   int *djA;
   double *dtempv;
-  //double *xp;
   int nnz;
 #undef BLOCKDIMX
 #endif

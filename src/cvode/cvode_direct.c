@@ -61,13 +61,59 @@
 #define BCG_TOLMAX 1.0E-30
 #endif
 
-#ifdef CAMP_DEBUG_PRINT
+
 void print_double(double *x, int len, const char *s){
+#ifndef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
-    printf("%s[%d]=%.16le\n",s,i,x[i]);
+    //printf("%s[%d]=%le\n",s,i,x[i]);
+    printf("%s[%d]=%.17le\n",s,i,x[i]);
+    //exit(0);
   }
-}
+  //printf("%s[%d]=%.16le\n",s,i,x[i]);
 #endif
+}
+
+void swapCSC_CSR_CVODE(CVodeMem md){
+  int n_row=BLOCKDIMX;
+  int* Ap=md->diA;
+  int* Aj=md->djA;
+  double* Ax=md->dA;
+  int nnz=md->nnz;
+  //printf("n_row %d nnz %d \n",n_row,nnz);
+  int* Bp=(int*)malloc((n_row+1)*sizeof(int));
+  int* Bi=(int*)malloc(nnz*sizeof(int));
+  double* Bx=(double*)malloc(nnz*sizeof(double));
+  memset(Bp, 0, (n_row+1)*sizeof(int));
+  for (int n = 0; n < nnz; n++){
+    Bp[Aj[n]]++;
+  }
+  for(int col = 0, cumsum = 0; col < n_row; col++){
+    int temp  = Bp[col];
+    Bp[col] = cumsum;
+    cumsum += temp;
+  }
+  Bp[n_row] = nnz;
+  int *mapJSPMV= (int *)malloc(nnz * sizeof(int));
+  for(int row = 0; row < n_row; row++){
+    for(int jj = Ap[row]; jj < Ap[row+1]; jj++){
+      int col  = Aj[jj];
+      int dest = Bp[col];
+      Bi[dest] = row;
+      Bx[dest] = Ax[jj];
+      mapJSPMV[jj]=dest;
+      Bp[col]++;
+    }
+  }
+  for(int col = 0, last = 0; col <= n_row; col++){
+    int temp  = Bp[col];
+    Bp[col] = last;
+    last    = temp;
+  }
+  print_double(Bx,md->nnz,"dA");
+  free(Bp);
+  free(Bi);
+  free(Bx);
+}
 
 /*=================================================================
   EXPORTED FUNCTIONS -- REQUIRED
@@ -843,6 +889,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 
 #ifndef USE_BCG
   CVodeMem md = cv_mem;
+  swapCSC_CSR_CVODE(md);
+  //print_double(md->dA,md->nnz,"dA");
+  //print_double(md->dtempv,73,"dtempv");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
   for(int i=0;i<BLOCKDIMX;i++){
@@ -897,6 +946,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   for (int i = 0; i < BLOCKDIMX; i++) {
     xp[i] = md->dx[i];
   }
+  print_double(md->dx,73,"dx");
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
@@ -908,9 +958,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
-#ifdef CAMP_DEBUG_PRINT
-  print_double(xp,73,"xp");
-#endif
+  //print_double(xp,73,"xp");
+
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
 
