@@ -60,9 +60,10 @@ extern "C" {
  * -----------------------------------------------------------------
  */
 
+
 typedef struct CVodeMemRec {
 
-#ifdef DEBUG_NVECTOR
+#ifndef CAMP_DEBUG_NVECTOR
   double *Ap;
   double *savedJp;
   double *cv_ewtp;
@@ -82,7 +83,7 @@ typedef struct CVodeMemRec {
   double *cv_ftempp;
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #define BLOCKDIMX 73
   double ddiag[BLOCKDIMX];
   double dr0[BLOCKDIMX];

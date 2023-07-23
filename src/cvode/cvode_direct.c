@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #include <math.h>
 //static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
@@ -65,11 +65,8 @@
 void print_double(double *x, int len, const char *s){
 #ifndef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
-    //printf("%s[%d]=%le\n",s,i,x[i]);
     printf("%s[%d]=%.17le\n",s,i,x[i]);
-    //exit(0);
   }
-  //printf("%s[%d]=%.16le\n",s,i,x[i]);
 #endif
 }
 
@@ -624,7 +621,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifdef USE_BCG
+#ifndef USE_BCG
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -638,7 +635,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
   for (int i = 0; i <= BLOCKDIMX; i++)
     cv_mem->diA[i] = SM_INDEXPTRS_S(cvdls_mem->A)[i];
 #endif
-#ifdef DEBUG_NVECTOR
+#ifndef CAMP_DEBUG_NVECTOR
   cv_mem->Ap=((SUNMatrixContent_Sparse)(cvdls_mem->A->content))->data;
   cv_mem->savedJp=((SUNMatrixContent_Sparse)(cvdls_mem->savedJ->content))->data;
 #endif
@@ -760,7 +757,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -791,7 +788,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem md){
   int n_row=BLOCKDIMX;
   int* Ap=md->diA;
@@ -901,11 +898,11 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
   //print_double(md->dA,md->nnz,"dA");
-  //print_double(md->dtempv,73,"dtempv");
+  print_double(md->dtempv,73,"dtempv");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
   for(int i=0;i<BLOCKDIMX;i++){
@@ -972,7 +969,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   for (int i = 0; i < BLOCKDIMX; i++) {
     xp[i] = md->dx[i];
   }
-  //print_double(md->dx,73,"dx");
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
@@ -984,7 +980,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
-  //print_double(xp,73,"dx");
+  print_double(xp,73,"dx");
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);

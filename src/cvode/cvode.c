@@ -380,6 +380,14 @@ static int cvRootfind(CVodeMem cv_mem);
  * =================================================================
  */
 
+void print_double2(double *x, int len, const char *s){
+#ifndef USE_PRINT_ARRAYS
+  for (int i=0; i<len; i++){
+    printf("%s[%d]=%.17le\n",s,i,x[i]);
+  }
+#endif
+}
+
 /*
  * CVodeCreate
  *
@@ -1360,10 +1368,10 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * --------------------------------------------------
    */
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
 #endif
-#ifdef DEBUG_NVECTOR
+#ifndef CAMP_DEBUG_NVECTOR
   double *youtp=N_VGetArrayPointer(yout);
   cv_mem->cv_ewtp=N_VGetArrayPointer(cv_mem->cv_ewt);
   cv_mem->cv_zn0p=N_VGetArrayPointer(cv_mem->cv_zn[0]);
@@ -1452,7 +1460,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 #endif
     /* Call cvStep to take a step */
     kflag = cvStep(cv_mem);
-
+    print_double2(cv_mem->cv_zn0p,73,"dzn");
 #ifdef CAMP_PROFILING
     cv_mem->timecvStep+= MPI_Wtime() - startcvStep;
     cv_mem->countercvStep++;
