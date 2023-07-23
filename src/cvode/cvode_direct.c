@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 #include <math.h>
 //static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
@@ -62,7 +62,7 @@
 #endif
 
 
-void print_double(double *x, int len, const char *s){
+void print_double2(double *x, int len, const char *s){
 #ifndef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.17le\n",s,i,x[i]);
@@ -621,7 +621,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifndef USE_BCG
+#ifdef USE_BCG
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -757,7 +757,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -788,7 +788,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem md){
   int n_row=BLOCKDIMX;
   int* Ap=md->diA;
@@ -825,7 +825,7 @@ void print_swapCSC_CSR_ODE(CVodeMem md){
     Bp[col] = last;
     last    = temp;
   }
-  print_double(Bx,md->nnz,"dA");
+  //print_double2(Bx,md->nnz,"dA");
   free(Bp);
   free(Bi);
   free(Bx);
@@ -852,11 +852,11 @@ void cudaDevicedotxy_2(double *g_idata1, double *g_idata2,
   for(int i=0;i<BLOCKDIMX;i++){
     sdata[i]=g_idata1[i]*g_idata2[i];
   }
-  //print_double(sdata,73,"sdata");
+  //print_double2(sdata,73,"sdata");
   for(int i=0;i<BLOCKDIMX;i++){
     sum+=sdata[i];
   }
-  print_double(&sum,1,"sdata");
+  print_double2(&sum,1,"sdata");
   *g_odata=sum;
   */
   *g_odata=0.;
@@ -898,11 +898,11 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
-  //print_double(md->dA,md->nnz,"dA");
-  print_double(md->dtempv,73,"dtempv");
+  //print_double2(md->dA,md->nnz,"dA");
+  //print_double2(md->dtempv,73,"dtempv");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
   for(int i=0;i<BLOCKDIMX;i++){
@@ -916,12 +916,12 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   int it=0;
   while(it<BCG_MAXIT && temp1>BCG_TOLMAX){
-    //print_double(md->dr0,73,"dr0");
-    //print_double(md->dr0h,73,"dr0h");
+    //print_double2(md->dr0,73,"dr0");
+    //print_double2(md->dr0h,73,"dr0h");
     cudaDevicedotxy_2(md->dr0, md->dr0h, &rho1);
-    //print_double(&rho1,1,"rho1");
+    //print_double2(&rho1,1,"rho1");
     beta = (rho1 / rho0) * (alpha / omega0);
-    //print_double(&beta,1,"beta");
+    //print_double2(&beta,1,"beta");
     for (int i = 0; i < BLOCKDIMX; i++) {
         md->dp0[i] =
             beta * md->dp0[i] + md->dr0[i] - md->dn0[i] * omega0 * beta;
@@ -939,7 +939,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     for (int i = 0; i < BLOCKDIMX; i++) {
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
-    //print_double(md->ddiag,73,"ddiag");
+    //print_double2(md->ddiag,73,"ddiag");
     cudaDevicedotxy_2(md->dy, md->dr0, &temp1);
     cudaDevicedotxy_2(md->dr0, md->dr0, &temp2);
     omega0 = temp1 / temp2;
@@ -949,15 +949,15 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
       md->dt[i] = 0.0;
     }
     cudaDevicedotxy_2(md->dr0, md->dr0, &temp1);
-    //print_double(md->dx,73,"dx");
-    //print_double(&temp1,1,"temp1");
+    //print_double2(md->dx,73,"dx");
+    //print_double2(&temp1,1,"temp1");
     temp1 = sqrt(temp1);
-    //print_double(&temp1,1,"sqrt(temp1)");
+    //print_double2(&temp1,1,"sqrt(temp1)");
     rho0 = rho1;
     it++;
     //printf("end iter %d BCG CPU\n",it);
   }
-  //print_double(&temp1,1,"temp1");
+  //print_double2(&temp1,1,"temp1");
   //printf("end BCG CPU\n");
   //exit(0);
   if(it>=BCG_MAXIT){
@@ -980,7 +980,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   cv_mem->counterKLUSparseSolve++;
 #endif
 
-  print_double(xp,73,"dx");
+  //print_double2(xp,73,"dx");
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
