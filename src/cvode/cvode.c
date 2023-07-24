@@ -1387,7 +1387,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * --------------------------------------------------
    */
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
 #endif
 
@@ -1402,9 +1402,9 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Reset and check ewt */
     if (cv_mem->cv_nst > 0) {
 
-      //print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun0");
+      print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun0");
       ewtsetOK = cv_mem->cv_efun(cv_mem->cv_zn[0], cv_mem->cv_ewt, cv_mem->cv_e_data);
-      //print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun1");
+      print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun1");
 
       if (ewtsetOK != 0) {
 
@@ -2855,7 +2855,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
-    //print_double(cv_mem->cv_ftempp,73,"cv_ftemppN_VLinearSum2");
+    print_double(cv_mem->cv_ftempp,73,"cv_ftemppN_VLinearSum2");
     retval = cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                          cv_mem->cv_last_yn, cv_mem->cv_ftemp, cv_mem->cv_user_data,
                          cv_mem->cv_tempv1, cv_mem->cv_acor_init);
@@ -2870,20 +2870,20 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   for(;;) {
 
     /* Load prediction into y vector */
-    //print_double(cv_mem->cv_zn0p,73,"dzn1139");
-    //print_double(cv_mem->cv_acor_initp,73,"cv_acor_init1140");
+    print_double(cv_mem->cv_zn0p,73,"dzn1139");
+    print_double(cv_mem->cv_acor_initp,73,"cv_acor_init1140");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
-    //print_double(cv_mem->cv_yp,73,"dcv_y1139");
+    print_double(cv_mem->cv_yp,73,"dcv_y1139");
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
 #ifdef CAMP_PROFILING
     double startDerivNewton=MPI_Wtime();
 #endif
-    //print_double(cv_mem->cv_ftempp,73,"cv_ftemppcv_f1");
+    print_double(cv_mem->cv_ftempp,73,"cv_ftemppcv_f1");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-    //print_double(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
-    //print_double(cv_mem->cv_yp,73,"dcv_y1144");
+    print_double(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
+    print_double(cv_mem->cv_yp,73,"dcv_y1144");
 #ifdef CAMP_PROFILING
     cv_mem->timeDerivNewton+= MPI_Wtime() - startDerivNewton;
     cv_mem->counterDerivNewton++;
@@ -2902,7 +2902,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
-      //print_double(cv_mem->cv_ftempp,73,"cv_ftempp1160");
+      print_double(cv_mem->cv_ftempp,73,"cv_ftempp1160");
 
 #ifdef CAMP_PROFILING
       cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
@@ -2976,14 +2976,14 @@ static int cvNewtonIteration(CVodeMem cv_mem)
   /* Looping point for Newton iteration */
   for(;;) {
 
-    //print_double(cv_mem->cv_tempvp,73,"dtempvN_VLinearSum1");
+    print_double(cv_mem->cv_tempvp,73,"dtempvN_VLinearSum1");
     /* Evaluate the residual of the nonlinear system */
     N_VLinearSum(cv_mem->cv_rl1, cv_mem->cv_zn[1], ONE,
                  cv_mem->cv_acor, cv_mem->cv_tempv);
-    //print_double(cv_mem->cv_tempvp,73,"dtempvN_VLinearSum2");
+    print_double(cv_mem->cv_tempvp,73,"dtempvN_VLinearSum2");
     N_VLinearSum(cv_mem->cv_gamma, cv_mem->cv_ftemp, -ONE,
                  cv_mem->cv_tempv, cv_mem->cv_tempv);
-    //print_double(cv_mem->cv_tempvp,73,"dtempvcv_lsolve1");
+    print_double(cv_mem->cv_tempvp,73,"dtempvcv_lsolve1");
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
@@ -2992,8 +2992,8 @@ static int cvNewtonIteration(CVodeMem cv_mem)
                                cv_mem->cv_y, cv_mem->cv_ftemp);
     SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval+100);
     cv_mem->cv_nni++;
-    //print_double(cv_mem->cv_tempvp,73,"dtempvcv_lsolve2");
-    //print_double(cv_mem->cv_yp,73,"dcv_y2994");
+    print_double(cv_mem->cv_tempvp,73,"dtempvcv_lsolve2");
+    print_double(cv_mem->cv_yp,73,"dcv_y2994");
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
 
@@ -3014,7 +3014,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
-      //print_double(cv_mem->cv_ftempp,73,"cv_ftemplsolve");
+      print_double(cv_mem->cv_ftempp,73,"cv_ftemplsolve");
       retval = cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
                                 cv_mem->cv_y, b, cv_mem->cv_user_data,
                                 cv_mem->cv_tempv1, cv_mem->cv_tempv2);
@@ -3040,8 +3040,8 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     N_VLinearSum(ONE, cv_mem->cv_acor, ONE, b, cv_mem->cv_acor);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
     SUNDIALS_DEBUG_PRINT_FULL("Updated correction and predicted y");
-    //print_double(cv_mem->cv_acorp,73,"cv_acor1060");
-    //print_double(cv_mem->cv_yp,73,"dcv_y1060");
+    print_double(cv_mem->cv_acorp,73,"cv_acor1060");
+    print_double(cv_mem->cv_yp,73,"dcv_y1060");
 
     /* Test for convergence.  If m > 0, an estimate of the convergence
        rate constant is stored in crate, and used in the test.        */

@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #include <math.h>
 //static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
@@ -621,7 +621,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifdef USE_BCG
+#ifndef USE_BCG
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -757,7 +757,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -788,7 +788,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem md){
   int n_row=BLOCKDIMX;
   int* Ap=md->diA;
@@ -898,7 +898,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
   //print_double2(md->dA,md->nnz,"dA");
