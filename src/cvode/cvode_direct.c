@@ -621,11 +621,6 @@ int cvDlsInitialize(CVodeMem cv_mem)
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
 #ifndef USE_BCG
-  int nrows=SM_NP_S(cvdls_mem->A);
-  if(nrows!=BLOCKDIMX){
-    printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
-    exit(0);
-  }
   cv_mem->nnz = SM_NNZ_S(cvdls_mem->A);
   cv_mem->djA = (int *) malloc(sizeof(int)*cv_mem->nnz);
   cv_mem->diA = (int *) malloc(sizeof(int)*(BLOCKDIMX+1));
@@ -757,6 +752,11 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 #endif
 
 #ifndef USE_BCG
+  int nrows=SM_NP_S(cvdls_mem->A);
+  if(nrows!=BLOCKDIMX){
+    printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
+    exit(0);
+  }
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
