@@ -55,7 +55,6 @@
 
 #ifndef USE_BCG
 #include <math.h>
-//static const int BLOCKDIMX=73;
 #define BLOCKDIMX 73
 #define BCG_MAXIT 1000
 #define BCG_TOLMAX 1.0E-30

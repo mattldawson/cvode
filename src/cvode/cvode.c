@@ -2854,6 +2854,8 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
+    //print_double(cv_mem->cv_zn0p,73,"dzn1174");
+    //print_double(cv_mem->cv_last_ynp,73,"cv_last_yn1175");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     print_double(cv_mem->cv_ftempp,73,"cv_ftemppN_VLinearSum2");
     retval = cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
@@ -3079,7 +3081,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 #ifdef CAMP_PROFILING
     double startDerivSolve=MPI_Wtime();
 #endif
-
+    print_double(cv_mem->cv_yp,73,"dcv_y1137");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
 #ifdef CAMP_PROFILING
@@ -3290,6 +3292,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_nscon = 0;
 
   SUNDIALS_DEBUG_PRINT("Request derivative");
+  print_double(cv_mem->cv_zn0p,73,"dzn1505");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
   SUNDIALS_DEBUG_PRINT("Received derivative");
