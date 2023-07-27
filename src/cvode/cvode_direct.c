@@ -55,7 +55,6 @@
 
 #ifndef USE_BCG
 #include <math.h>
-#define BLOCKDIMX 73
 #define BCG_MAXIT 1000
 #define BCG_TOLMAX 1.0E-30
 #endif
@@ -621,12 +620,23 @@ int cvDlsInitialize(CVodeMem cv_mem)
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
 #ifndef USE_BCG
+  cv_mem->nrows=SM_NP_S(cvdls_mem->A);
+  cv_mem->ddiag = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dr0 = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dr0h = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dn0 = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dp0 = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dt = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->ds = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dy = (double *) malloc(sizeof(double)*cv_mem->nrows);
+  cv_mem->dx = (double *) malloc(sizeof(double)*cv_mem->nrows);
+
   cv_mem->nnz = SM_NNZ_S(cvdls_mem->A);
   cv_mem->djA = (int *) malloc(sizeof(int)*cv_mem->nnz);
-  cv_mem->diA = (int *) malloc(sizeof(int)*(BLOCKDIMX+1));
+  cv_mem->diA = (int *) malloc(sizeof(int)*(cv_mem->nrows+1));
   for (int i = 0; i < cv_mem->nnz; i++)
     cv_mem->djA[i] = SM_INDEXVALS_S(cvdls_mem->A)[i];
-  for (int i = 0; i <= BLOCKDIMX; i++)
+  for (int i = 0; i <= cv_mem->nrows; i++)
     cv_mem->diA[i] = SM_INDEXPTRS_S(cvdls_mem->A)[i];
 #endif
 #ifndef CAMP_DEBUG_NVECTOR
@@ -752,20 +762,15 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 #endif
 
 #ifndef USE_BCG
-  int nrows=SM_NP_S(cvdls_mem->A);
-  if(nrows!=BLOCKDIMX){
-    printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
-    exit(0);
-  }
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
   int *djA = cv_mem->djA;
-  for(int i=0;i<BLOCKDIMX;i++){
+  for(int i=0;i<cv_mem->nrows;i++){
     cv_mem->ddiag[i] = 1.0;
     cv_mem->dx[i] = 0.;
   }
-  for(int row=0;row<BLOCKDIMX;row++) {
+  for(int row=0;row<cv_mem->nrows;row++) {
     for (int j = diA[row]; j < diA[row + 1]; j++) {
       if (djA[j] == row) {
         if (dA[j] != 0.0) {
@@ -789,8 +794,9 @@ return(cvdls_mem->last_flag);
 }
 
 #ifndef USE_BCG
-void print_swapCSC_CSR_ODE(CVodeMem md){
-  int n_row=BLOCKDIMX;
+void print_swapCSC_CSR_ODE(CVodeMem cv_mem){
+  CVodeMem md = cv_mem;
+  int n_row=cv_mem->nrows;
   int* Ap=md->diA;
   int* Aj=md->djA;
   double* Ax=md->dA;
@@ -831,11 +837,11 @@ void print_swapCSC_CSR_ODE(CVodeMem md){
   free(Bx);
 }
 
-void cudaDeviceSpmv_2(double* dx, double* db, double* dA, int* djA, int* diA){
-  for(int row=0;row<BLOCKDIMX;row++){
+void cudaDeviceSpmv_2(CVodeMem cv_mem, double* dx, double* db, double* dA, int* djA, int* diA){
+  for(int row=0;row<cv_mem->nrows;row++){
     dx[row] = 0.0;
   }
-  for(int row=0;row<BLOCKDIMX;row++){
+  for(int row=0;row<cv_mem->nrows;row++){
     for (int j = diA[row]; j < diA[row + 1]; j++) {
         double mult = db[row] * dA[j];
         int i_dx=djA[j];
@@ -844,26 +850,25 @@ void cudaDeviceSpmv_2(double* dx, double* db, double* dA, int* djA, int* diA){
   }
 }
 
-void cudaDevicedotxy_2(double *g_idata1, double *g_idata2,
+void cudaDevicedotxy_2(CVodeMem cv_mem, double *g_idata1, double *g_idata2,
                                   double *g_odata){
  /*
   double sum=0;
-  double sdata[BLOCKDIMX];
-  for(int i=0;i<BLOCKDIMX;i++){
+  double sdata[cv_mem->nrows];
+  for(int i=0;i<cv_mem->nrows;i++){
     sdata[i]=g_idata1[i]*g_idata2[i];
   }
   //print_double2(sdata,73,"sdata");
-  for(int i=0;i<BLOCKDIMX;i++){
+  for(int i=0;i<cv_mem->nrows;i++){
     sum+=sdata[i];
   }
   print_double2(&sum,1,"sdata");
   *g_odata=sum;
   */
   *g_odata=0.;
-  for(int i=0;i<BLOCKDIMX;i++){
+  for(int i=0;i<cv_mem->nrows;i++){
     *g_odata+=g_idata1[i]*g_idata2[i];
   }
-
 }
 
 #endif
@@ -905,12 +910,12 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //print_double2(md->dtempv,73,"dtempv");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
-  for(int i=0;i<BLOCKDIMX;i++){
+  for(int i=0;i<cv_mem->nrows;i++){
   md->dn0[i]=0.0;
   md->dp0[i]=0.0;
   }
-  cudaDeviceSpmv_2(md->dr0,md->dx,md->dA,md->djA,md->diA);
-  for(int i=0;i<BLOCKDIMX;i++){
+  cudaDeviceSpmv_2(cv_mem,md->dr0,md->dx,md->dA,md->djA,md->diA);
+  for(int i=0;i<cv_mem->nrows;i++){
     md->dr0[i] = md->dtempv[i] - md->dr0[i];
     md->dr0h[i] = md->dr0[i];
   }
@@ -918,37 +923,37 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   while(it<BCG_MAXIT && temp1>BCG_TOLMAX){
     //print_double2(md->dr0,73,"dr0");
     //print_double2(md->dr0h,73,"dr0h");
-    cudaDevicedotxy_2(md->dr0, md->dr0h, &rho1);
+    cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0h, &rho1);
     //print_double2(&rho1,1,"rho1");
     beta = (rho1 / rho0) * (alpha / omega0);
     //print_double2(&beta,1,"beta");
-    for (int i = 0; i < BLOCKDIMX; i++) {
+    for (int i = 0; i < cv_mem->nrows; i++) {
         md->dp0[i] =
             beta * md->dp0[i] + md->dr0[i] - md->dn0[i] * omega0 * beta;
         md->dy[i] = md->ddiag[i] * md->dp0[i];
     }
-    cudaDeviceSpmv_2(md->dn0, md->dy, md->dA, md->djA, md->diA);
-    cudaDevicedotxy_2(md->dr0h, md->dn0, &temp1);
+    cudaDeviceSpmv_2(cv_mem,md->dn0, md->dy, md->dA, md->djA, md->diA);
+    cudaDevicedotxy_2(cv_mem,md->dr0h, md->dn0, &temp1);
     alpha = rho1 / temp1;
-    for (int i = 0; i < BLOCKDIMX; i++){
+    for (int i = 0; i < cv_mem->nrows; i++){
       md->ds[i] = md->dr0[i] - alpha * md->dn0[i];
       md->dx[i] += alpha * md->dy[i];
       md->dy[i] = md->ddiag[i] * md->ds[i];
     }
-    cudaDeviceSpmv_2(md->dt, md->dy, md->dA, md->djA, md->diA);
-    for (int i = 0; i < BLOCKDIMX; i++) {
+    cudaDeviceSpmv_2(cv_mem,md->dt, md->dy, md->dA, md->djA, md->diA);
+    for (int i = 0; i < cv_mem->nrows; i++) {
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
     //print_double2(md->ddiag,73,"ddiag");
-    cudaDevicedotxy_2(md->dy, md->dr0, &temp1);
-    cudaDevicedotxy_2(md->dr0, md->dr0, &temp2);
+    cudaDevicedotxy_2(cv_mem,md->dy, md->dr0, &temp1);
+    cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0, &temp2);
     omega0 = temp1 / temp2;
-    for (int i = 0; i < BLOCKDIMX; i++) {
+    for (int i = 0; i < cv_mem->nrows; i++) {
       md->dx[i] += omega0 * md->dy[i];
       md->dr0[i] = md->ds[i] - omega0 * md->dt[i];
       md->dt[i] = 0.0;
     }
-    cudaDevicedotxy_2(md->dr0, md->dr0, &temp1);
+    cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0, &temp1);
     //print_double2(md->dx,73,"dx");
     //print_double2(&temp1,1,"temp1");
     temp1 = sqrt(temp1);
@@ -966,7 +971,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   retval=0;
   double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
-  for (int i = 0; i < BLOCKDIMX; i++) {
+  for (int i = 0; i < cv_mem->nrows; i++) {
     xp[i] = md->dx[i];
   }
 #else

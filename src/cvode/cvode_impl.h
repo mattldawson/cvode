@@ -84,21 +84,21 @@ typedef struct CVodeMemRec {
 #endif
 
 #ifndef USE_BCG
-#define BLOCKDIMX 73
-  double ddiag[BLOCKDIMX];
-  double dr0[BLOCKDIMX];
-  double dr0h[BLOCKDIMX];
-  double dn0[BLOCKDIMX];
-  double dp0[BLOCKDIMX];
-  double dt[BLOCKDIMX];
-  double ds[BLOCKDIMX];
-  double dy[BLOCKDIMX];
-  double dx[BLOCKDIMX];
+  double *ddiag;
+  double *dr0;
+  double *dr0h;
+  double *dn0;
+  double *dp0;
+  double *dt;
+  double *ds;
+  double *dy;
+  double *dx;
   double *dA;
   int *diA;
   int *djA;
   double *dtempv;
   int nnz;
+  int nrows;
 #undef BLOCKDIMX
 #endif
 
