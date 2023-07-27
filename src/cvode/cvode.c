@@ -715,9 +715,9 @@ int CVodeReInit(void *cvode_mem, realtype t0, N_Vector y0)
 
   /* Initialize zn[0] in the history array */
 
-  print_double(cv_mem->cv_zn0p,73,"dzn718");
+  //print_double(cv_mem->cv_zn0p,73,"dzn718");
   N_VScale(ONE, y0, cv_mem->cv_zn[0]);
-  print_double(cv_mem->cv_zn0p,73,"dzn720");
+  //print_double(cv_mem->cv_zn0p,73,"dzn720");
 
   /* Initialize all the counters */
 
@@ -1397,6 +1397,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 #endif
 
   nstloc = 0;
+  //print_double(cv_mem->cv_zn0p,73,"dzn1858");
   for(;;) {
 
     SUNDIALS_DEBUG_PRINT_INT("Beginning timestep", nstloc);
@@ -1467,9 +1468,9 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     double startcvStep=MPI_Wtime();
 #endif
     /* Call cvStep to take a step */
-    print_double(cv_mem->cv_zn0p,73,"dzn1858");
+    //print_double(cv_mem->cv_zn0p,73,"dzn1858");
     kflag = cvStep(cv_mem);
-    //print_double(cv_mem->cv_zn0p,73,"dzn");
+    //print_double(cv_mem->cv_zn0p,73,"dzn1867");
 #ifdef CAMP_PROFILING
     cv_mem->timecvStep+= MPI_Wtime() - startcvStep;
     cv_mem->countercvStep++;
@@ -1563,7 +1564,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     }
 
   } /* end looping for internal steps */
-
+  print_double(youtp,73,"yout1920");
   return(istate);
 }
 
@@ -2361,6 +2362,7 @@ static void cvIncreaseBDF(CVodeMem cv_mem)
   for (j=2; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_L], ONE,
                  cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
+  print_double(cv_mem->cv_zn0p,73,"dzn1687");
 }
 
 /*
@@ -2391,6 +2393,7 @@ static void cvDecreaseBDF(CVodeMem cv_mem)
   for (j=2; j < cv_mem->cv_q; j++)
     N_VLinearSum(-cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_q],
                  ONE, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
+  print_double(cv_mem->cv_zn0p,73,"dzn1460");
 }
 
 /*
@@ -2442,7 +2445,7 @@ static void cvPredict(CVodeMem cv_mem)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
-  //print_double(cv_mem->cv_zn0p,73,"dzn1439");
+  print_double(cv_mem->cv_zn0p,73,"dzn1439");
 }
 
 /*
@@ -2861,7 +2864,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
-    print_double(cv_mem->cv_zn0p,73,"dzn1174");
+    //print_double(cv_mem->cv_zn0p,73,"dzn1174");
     //print_double(cv_mem->cv_last_ynp,73,"cv_last_yn1175");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     //print_double(cv_mem->cv_ftempp,73,"cv_ftemppN_VLinearSum2");
@@ -2911,7 +2914,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
-      print_double(cv_mem->cv_ftempp,73,"cv_ftempp1160");
+      //print_double(cv_mem->cv_ftempp,73,"cv_ftempp1160");
 
 #ifdef CAMP_PROFILING
       cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
@@ -3196,11 +3199,13 @@ static void cvRestore(CVodeMem cv_mem, realtype saved_t)
   int j, k;
 
   cv_mem->cv_tn = saved_t;
+  print_double(cv_mem->cv_zn0p,73,"dzn1299");
   for (k = 1; k <= cv_mem->cv_q; k++)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
   N_VScale(ONE, cv_mem->cv_last_yn, cv_mem->cv_zn[0]);
+  print_double(cv_mem->cv_zn0p,73,"dzn1306");
 }
 
 /*
@@ -3244,6 +3249,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
                  cv_mem->cv_zn[0]);
     min_val = ZERO;
   }
+  print_double(cv_mem->cv_zn0p,73,"dzn1478");
 
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
 
@@ -3299,7 +3305,6 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_nscon = 0;
 
   SUNDIALS_DEBUG_PRINT("Request derivative");
-  print_double(cv_mem->cv_zn0p,73,"dzn1505");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
   SUNDIALS_DEBUG_PRINT("Received derivative");
@@ -3354,6 +3359,7 @@ static void cvCompleteStep(CVodeMem cv_mem)
     cv_mem->cv_saved_tq5 = cv_mem->cv_tq[5];
     cv_mem->cv_indx_acor = cv_mem->cv_qmax;
   }
+  print_double(cv_mem->cv_zn0p,73,"dzn1554");
 }
 
 /*
@@ -3514,6 +3520,7 @@ static void cvChooseEta(CVodeMem cv_mem)
 
     }
   }
+  print_double(cv_mem->cv_zn0p,73,"dzn1581");
 }
 
 /*
