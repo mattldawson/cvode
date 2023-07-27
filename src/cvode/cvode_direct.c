@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 #include <math.h>
 #define BLOCKDIMX 73
 #define BCG_MAXIT 1000
@@ -620,7 +620,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->nnz = SM_NNZ_S(cvdls_mem->A);
   cv_mem->djA = (int *) malloc(sizeof(int)*cv_mem->nnz);
   cv_mem->diA = (int *) malloc(sizeof(int)*(BLOCKDIMX+1));
@@ -751,7 +751,9 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
+  //todo: output differs after 14 cells in mock_monarch test 1 timestep
+  //Tried moving here set of diA and djA, but same result
   int nrows=SM_NP_S(cvdls_mem->A);
   if(nrows!=BLOCKDIMX){
     printf("ERROR SM_NP_S(cvdls_mem->A)!=BLOCKDIMX ; Set BLOCKDIMX to %d\n",nrows);
@@ -787,7 +789,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem md){
   int n_row=BLOCKDIMX;
   int* Ap=md->diA;
@@ -897,7 +899,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
   //print_double2(md->dA,md->nnz,"dA");
