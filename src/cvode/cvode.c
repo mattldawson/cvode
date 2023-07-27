@@ -1392,7 +1392,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
    * --------------------------------------------------
    */
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
 #endif
 
