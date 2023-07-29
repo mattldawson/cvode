@@ -53,7 +53,7 @@
 
 #include <time.h>
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 #include <math.h>
 #define BCG_MAXIT 1000
 #define BCG_TOLMAX 1.0E-30
@@ -619,7 +619,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->nrows=SM_NP_S(cvdls_mem->A);
   cv_mem->ddiag = (double *) malloc(sizeof(double)*cv_mem->nrows);
   cv_mem->dr0 = (double *) malloc(sizeof(double)*cv_mem->nrows);
@@ -761,7 +761,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   double startKLUSparseSetup = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -793,7 +793,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 return(cvdls_mem->last_flag);
 }
 
-#ifndef USE_BCG
+#ifdef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem cv_mem){
   CVodeMem md = cv_mem;
   int n_row=cv_mem->nrows;
@@ -903,7 +903,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   double startKLUSparseSolve = MPI_Wtime();
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
   //print_double2(md->dA,md->nnz,"dA");
