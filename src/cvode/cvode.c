@@ -380,13 +380,14 @@ static int cvRootfind(CVodeMem cv_mem);
  * =================================================================
  */
 
-void print_double(double *x, int len, const char *s){
 #ifdef USE_PRINT_ARRAYS
+void print_double(double *x, int len, const char *s){
+
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.17le\n",s,i,x[i]);
   }
-#endif
 }
+#endif
 
 /*
  * CVodeCreate
