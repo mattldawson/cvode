@@ -768,6 +768,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   int *djA = cv_mem->djA;
   for(int i=0;i<cv_mem->nrows;i++){
     cv_mem->ddiag[i] = 1.0;
+    cv_mem->dx[i] = 0.0;
   }
   for(int row=0;row<cv_mem->nrows;row++) {
     for (int j = diA[row]; j < diA[row + 1]; j++) {
@@ -907,6 +908,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //print_swapCSC_CSR_ODE(md);
   //print_double2(md->dA,md->nnz,"dA");
   //print_double2(md->dtempv,73,"dtempv");
+  print_double2(md->dx,73,"dx1017");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
   for(int i=0;i<cv_mem->nrows;i++){
