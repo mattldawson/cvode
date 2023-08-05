@@ -768,7 +768,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   int *djA = cv_mem->djA;
   for(int i=0;i<cv_mem->nrows;i++){
     cv_mem->ddiag[i] = 1.0;
-    cv_mem->dx[i] = 0.;
   }
   for(int row=0;row<cv_mem->nrows;row++) {
     for (int j = diA[row]; j < diA[row + 1]; j++) {
