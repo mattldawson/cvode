@@ -1397,7 +1397,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 #endif
 
   nstloc = 0;
-  //print_double(cv_mem->cv_zn0p,73,"dzn1858");
+  print_double(cv_mem->cv_zn0p,73,"dzn807");
   for(;;) {
 
     SUNDIALS_DEBUG_PRINT_INT("Beginning timestep", nstloc);
@@ -1410,7 +1410,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 
       print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun0");
       ewtsetOK = cv_mem->cv_efun(cv_mem->cv_zn[0], cv_mem->cv_ewt, cv_mem->cv_e_data);
-      print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun1");
+      //print_double(cv_mem->cv_tempvp,73,"dtempvcv_efun1");
 
       if (ewtsetOK != 0) {
 
