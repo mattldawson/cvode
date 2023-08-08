@@ -3004,8 +3004,8 @@ static int cvNewtonIteration(CVodeMem cv_mem)
                                cv_mem->cv_y, cv_mem->cv_ftemp);
     SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval+100);
     cv_mem->cv_nni++;
-    print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_lsolve2");
-    print_double_cv(cv_mem->cv_yp,73,"dcv_y2994");
+    //print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_lsolve2");
+    //print_double_cv(cv_mem->cv_yp,73,"dcv_y2994");
 
     if (retval < 0) return(CV_LSOLVE_FAIL);
 
