@@ -2892,7 +2892,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     double startDerivNewton=MPI_Wtime();
 #endif
     //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f1");
-    print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
+    //print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
     print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
