@@ -908,7 +908,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   //print_swapCSC_CSR_ODE(md);
   //print_double2(md->dA,md->nnz,"dA");
   //print_double2(md->dtempv,73,"dtempv");
-  print_double2(md->dx,73,"dx1017");
+  //print_double2(md->dx,73,"dx1017");
   double alpha,rho0,omega0,beta,rho1,temp1,temp2;
   alpha=rho0=omega0=beta=rho1=temp1=temp2=1.0;
   for(int i=0;i<cv_mem->nrows;i++){

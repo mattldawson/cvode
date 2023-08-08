@@ -381,7 +381,7 @@ static int cvRootfind(CVodeMem cv_mem);
  */
 
 void print_double_cv(double *x, int len, const char *s){
-#ifdef USE_PRINT_ARRAYS
+#ifndef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.17le\n",s,i,x[i]);
   }
@@ -1397,7 +1397,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
 #endif
 
   nstloc = 0;
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn807");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn807");
   for(;;) {
 
     SUNDIALS_DEBUG_PRINT_INT("Beginning timestep", nstloc);
@@ -2882,7 +2882,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   for(;;) {
 
     /* Load prediction into y vector */
-    print_double_cv(cv_mem->cv_zn0p,73,"dzn1139");
+    //print_double_cv(cv_mem->cv_zn0p,73,"dzn1139");
     //print_double_cv(cv_mem->cv_acor_initp,73,"cv_acor_init1140");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
     print_double_cv(cv_mem->cv_yp,73,"dcv_y1139");
@@ -2892,6 +2892,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     double startDerivNewton=MPI_Wtime();
 #endif
     //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f1");
+    print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
     print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
