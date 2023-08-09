@@ -3518,21 +3518,7 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem)
     //print_double(&cv_L1,1,"1cv_L1732");
     //double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
     //print_double(&cv_etaq_power,1,"cv_etaq_power1734");
-    if(cv_mem->cv_L==2){
-      double cv_etaq_power=cbrt(BIAS3dup);
-      print_double(&cv_etaq_power,1,"cv_etaq_power1757");
-      double cv_etaq_sqrt=sqrt(BIAS3dup);
-      cv_mem->cv_etaqp1 = ONE / (cbrt(BIAS3*dup) + ADDON);
-      //print_double(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
-      //double cv_etaq_sqrt2=sqrt(cv_etaq_sqrt);
-      //print_double(&cv_etaq_sqrt2,1,"cv_etaq_sqrt2");
-      //double ADDONetaq=cv_etaq_sqrt2 + ADDON;
-      //print_double(&ADDONetaq,1,"ADDONetaq");
-      //double cv_etaqp1_2 = 1.0 / (ADDONetaq);
-      //print_double(&cv_etaqp1_2,1,"cv_etaqp1_2");
-    }else{
-      cv_mem->cv_etaqp1 = ONE / (SUNRpowerR(BIAS3*dup, ONE/(cv_mem->cv_L+1)) + ADDON);
-    }
+    cv_mem->cv_etaqp1 = ONE / (SUNRpowerR(BIAS3*dup, ONE/(cv_mem->cv_L+1)) + ADDON);
     print_double(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
   }
   return(cv_mem->cv_etaqp1);

@@ -45,6 +45,8 @@ realtype SUNRpowerI(realtype base, int exponent)
 realtype SUNRpowerR(realtype base, realtype exponent)
 {
   if (base <= ZERO) return(ZERO);
+  if(exponent==(1./2)) return sqrt(base); //Equal than CUDA/10.1.105
+  if(exponent==(1./3)) return cbrt(base); //Equal than CUDA/10.1.105
 
 #if defined(SUNDIALS_USE_GENERIC_MATH)
   return((realtype) pow((double) base, (double) exponent));
