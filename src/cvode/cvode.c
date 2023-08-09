@@ -2236,6 +2236,7 @@ static void cvAdjustParams(CVodeMem cv_mem)
     cvAdjustOrder(cv_mem, cv_mem->cv_qprime-cv_mem->cv_q);
     cv_mem->cv_q = cv_mem->cv_qprime;
     cv_mem->cv_L = cv_mem->cv_q+1;
+    //print_int_cv(&cv_mem->cv_L,1,"cv_L1770");
     cv_mem->cv_qwait = cv_mem->cv_L;
   }
   cvRescale(cv_mem);
@@ -3038,7 +3039,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
 
     /* Get WRMS norm of correction */
     del = N_VWrmsNorm(b, cv_mem->cv_ewt);
-    print_double(&del,1,"del1171");
+    //print_double(&del,1,"del1171");
 
     /* Call a user-supplied function to improve guesses for zn(0), if one exists */
     if (cv_mem->cv_ghfun) {
@@ -3083,10 +3084,10 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     SUNDIALS_DEBUG_PRINT_REAL("Got dcon", dcon);
 
     if (dcon <= ONE) {
-      print_double(cv_mem->cv_acorp,73,"cv_acor1505");
-      print_double(cv_mem->cv_ewtp,73,"dewt1505");
+      //print_double(cv_mem->cv_acorp,73,"cv_acor1505");
+      //print_double(cv_mem->cv_ewtp,73,"dewt1505");
       cv_mem->cv_acnrm = N_VWrmsNorm(cv_mem->cv_acor, cv_mem->cv_ewt);
-      print_double(&cv_mem->cv_acnrm,1,"cv_acnrm1151");
+      //print_double(&cv_mem->cv_acnrm,1,"cv_acnrm1151");
       cv_mem->cv_jcur = SUNFALSE;
       return(CV_SUCCESS); /* Nonlinear system was solved successfully */
     }
@@ -3274,7 +3275,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   //print_double(&cv_mem->cv_tq[2],1,"cv_tq_21504");
   //print_double(&cv_mem->cv_acnrm,1,"cv_acnrm1504");
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
-  print_double(&dsm,1,"dsm1504");
+  //print_double(&dsm,1,"dsm1504");
 
   SUNDIALS_DEBUG_PRINT_REAL("Evaluating dsm", dsm);
   SUNDIALS_DEBUG_PRINT_REAL("Evaluating minimum predicted conc", min_val);
@@ -3303,7 +3304,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
     cv_mem->cv_eta = SUNMAX(ETAMIN, SUNMAX(cv_mem->cv_eta,
                                            cv_mem->cv_hmin / SUNRabs(cv_mem->cv_h)));
     if (*nefPtr >= SMALL_NEF) cv_mem->cv_eta = SUNMIN(cv_mem->cv_eta, ETAMXF);
-    print_double(&cv_mem->cv_eta,1,"cv_eta_1510");
+    //print_double(&cv_mem->cv_eta,1,"cv_eta_1510");
     cvRescale(cv_mem);
     return(TRY_AGAIN);
   }
@@ -3311,9 +3312,10 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   /* After MXNEF1 failures, force an order reduction and retry step */
   if (cv_mem->cv_q > 1) {
     cv_mem->cv_eta = SUNMAX(ETAMIN, cv_mem->cv_hmin / SUNRabs(cv_mem->cv_h));
-    print_double(&cv_mem->cv_eta,1,"cv_eta_1517");
+    //print_double(&cv_mem->cv_eta,1,"cv_eta_1517");
     cvAdjustOrder(cv_mem,-1);
     cv_mem->cv_L = cv_mem->cv_q;
+    //print_int_cv(&cv_mem->cv_L,1,"cv_L1547");
     cv_mem->cv_q--;
     cv_mem->cv_qwait = cv_mem->cv_L;
     cvRescale(cv_mem);
@@ -3330,7 +3332,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_qwait = LONG_WAIT;
   cv_mem->cv_nscon = 0;
 
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1505");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1505");
   SUNDIALS_DEBUG_PRINT("Request derivative");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
@@ -3340,7 +3342,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   if (retval > 0)  return(CV_UNREC_RHSFUNC_ERR);
 
   N_VScale(cv_mem->cv_h, cv_mem->cv_tempv, cv_mem->cv_zn[1]);
-  print_double(cv_mem->cv_zn1p,73,"dzn1_1536");
+  //print_double(cv_mem->cv_zn1p,73,"dzn1_1536");
 
   return(TRY_AGAIN);
 }
@@ -3413,18 +3415,19 @@ static void cvPrepareNextStep(CVodeMem cv_mem, realtype dsm)
   }
 
   /* etaq is the ratio of new to old h at the current order */
-  print_double(&dsm,1,"dsm1639");
-  print_int_cv(&cv_mem->cv_L,1,"cv_L1639");
-  double BIAS2dsm=BIAS2*dsm;
-  print_double(&BIAS2dsm,1,"BIAS2dsm");
-  double cv_L1=1./cv_mem->cv_L;
-  print_double(&cv_L1,1,"1cv_L");
-  double cv_etaq_power=SUNRpowerR(BIAS2dsm,cv_L1);
-  print_double(&cv_etaq_power,1,"cv_etaq_power");
-  double cv_etaq_sqrt=sqrt(BIAS2dsm);
-  print_double(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
+  //print_double(&dsm,1,"dsm1639");
+  //print_int_cv(&cv_mem->cv_L,1,"cv_L1639");
+  //double BIAS2dsm=BIAS2*dsm;
+  //print_double(&BIAS2dsm,1,"BIAS2dsm");
+  //double cv_L1=1./cv_mem->cv_L;
+  //print_double(&cv_L1,1,"1cv_L");
+  //double cv_etaq_power=SUNRpowerR(BIAS2dsm,cv_L1);
+  //print_double(&cv_etaq_power,1,"cv_etaq_power");
+  //double cv_etaq_sqrt=sqrt(BIAS2dsm);
+  //print_double(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
   cv_mem->cv_etaq = ONE /(SUNRpowerR(BIAS2*dsm,ONE/cv_mem->cv_L) + ADDON);
-  print_double(&cv_mem->cv_etaq,1,"cv_etaq1639");
+  //print_int_cv(&cv_mem->cv_L,1,"cv_L1674");
+  //print_double(&cv_mem->cv_etaq,1,"cv_etaq1639");
   /* If no order change, adjust eta and acor in cvSetEta and return */
   if (cv_mem->cv_qwait != 0) {
     cv_mem->cv_eta = cv_mem->cv_etaq;
