@@ -2461,7 +2461,7 @@ static void cvPredict(CVodeMem cv_mem)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
 
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1439");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1439");
 }
 
 /*
@@ -3045,7 +3045,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     if (cv_mem->cv_ghfun) {
       SUNDIALS_DEBUG_PRINT("Calling guess helper");
       N_VLinearSum(ONE, cv_mem->cv_y, ONE, b, cv_mem->cv_ftemp);
-      print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemplsolve");
+      //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemplsolve");
       retval = cv_mem->cv_ghfun(cv_mem->cv_tn, ZERO, cv_mem->cv_ftemp,
                                 cv_mem->cv_y, b, cv_mem->cv_user_data,
                                 cv_mem->cv_tempv1, cv_mem->cv_tempv2);
@@ -3426,8 +3426,8 @@ static void cvPrepareNextStep(CVodeMem cv_mem, realtype dsm)
   //double cv_etaq_sqrt=sqrt(BIAS2dsm);
   //print_double_cv(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
   cv_mem->cv_etaq = ONE /(SUNRpowerR(BIAS2*dsm,ONE/cv_mem->cv_L) + ADDON);
+  print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1639");
   //print_int_cv(&cv_mem->cv_L,1,"cv_L1674");
-  //print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1639");
   /* If no order change, adjust eta and acor in cvSetEta and return */
   if (cv_mem->cv_qwait != 0) {
     cv_mem->cv_eta = cv_mem->cv_etaq;
@@ -3510,7 +3510,22 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem)
                  cv_mem->cv_acor, cv_mem->cv_tempv);
     print_double_cv(cv_mem->cv_tempvp,73,"dtempv1658");
     dup = N_VWrmsNorm(cv_mem->cv_tempv, cv_mem->cv_ewt) * cv_mem->cv_tq[3];
+    print_double(&dup,1,"dup1728");
+    print_int(&cv_mem->cv_L,1,"cv_L1728");
+    double BIAS3dup=BIAS3*dup;
+    print_double(&BIAS3dup,1,"BIAS3dup");
+    double cv_L1=1./(cv_mem->cv_L+1);
+    print_double(&cv_L1,1,"1cv_L1732");
+    double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
+    print_double(&cv_etaq_power,1,"cv_etaq_power1734");
+    if(cv_mem->cv_L==2){
+      double cv_etaq_sqrt=sqrt(BIAS3dup);
+      print_double(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
+      double cv_etaq_sqrt2=sqrt(cv_etaq_sqrt);
+      print_double(&cv_etaq_sqrt2,1,"cv_etaq_sqrt2");
+    }
     cv_mem->cv_etaqp1 = ONE / (SUNRpowerR(BIAS3*dup, ONE/(cv_mem->cv_L+1)) + ADDON);
+    print_double(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
   }
   return(cv_mem->cv_etaqp1);
 }
@@ -3531,7 +3546,7 @@ static void cvChooseEta(CVodeMem cv_mem)
 {
   realtype etam;
 
-  print_double(&cv_mem->cv_etaqm1,1,"cv_etaqm11605");
+  print_double(&cv_mem->cv_etaqm1,1,"cv_etaqm1605");
   print_double(&cv_mem->cv_etaq,1,"cv_etaq1605");
   print_double(&cv_mem->cv_etaqp1,1,"cv_etaqp1605");
   etam = SUNMAX(cv_mem->cv_etaqm1, SUNMAX(cv_mem->cv_etaq, cv_mem->cv_etaqp1));
