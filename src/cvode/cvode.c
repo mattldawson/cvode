@@ -381,7 +381,7 @@ static int cvRootfind(CVodeMem cv_mem);
  */
 
 void print_double_cv(double *x, int len, const char *s){
-#ifndef USE_PRINT_ARRAYS
+#ifdef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.17le\n",s,i,x[i]);
   }
@@ -389,7 +389,7 @@ void print_double_cv(double *x, int len, const char *s){
 }
 
 void print_int_cv(int *x, int len, const char *s){
-#ifndef USE_PRINT_ARRAYS
+#ifdef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%d\n",s,i,x[i]);
   }
@@ -3508,18 +3508,18 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem)
       SUNRpowerI(cv_mem->cv_h/cv_mem->cv_tau[2], cv_mem->cv_L);
     N_VLinearSum(-cquot, cv_mem->cv_zn[cv_mem->cv_qmax], ONE,
                  cv_mem->cv_acor, cv_mem->cv_tempv);
-    print_double_cv(cv_mem->cv_tempvp,73,"dtempv1658");
+    //print_double_cv(cv_mem->cv_tempvp,73,"dtempv1658");
     dup = N_VWrmsNorm(cv_mem->cv_tempv, cv_mem->cv_ewt) * cv_mem->cv_tq[3];
-    print_double(&dup,1,"dup1728");
-    print_int(&cv_mem->cv_L,1,"cv_L1728");
-    double BIAS3dup=BIAS3*dup;
-    print_double(&BIAS3dup,1,"BIAS3dup");
-    double cv_L1=1./(cv_mem->cv_L+1);
-    //print_double(&cv_L1,1,"1cv_L1732");
+    print_double_cv(&dup,1,"dup1728");
+    print_int_cv(&cv_mem->cv_L,1,"cv_L1728");
+    //double BIAS3dup=BIAS3*dup;
+    //print_double_cv(&BIAS3dup,1,"BIAS3dup");
+    //double cv_L1=1./(cv_mem->cv_L+1);
+    //print_double_cv(&cv_L1,1,"1cv_L1732");
     //double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
-    //print_double(&cv_etaq_power,1,"cv_etaq_power1734");
+    //print_double_cv(&cv_etaq_power,1,"cv_etaq_power1734");
     cv_mem->cv_etaqp1 = ONE / (SUNRpowerR(BIAS3*dup, ONE/(cv_mem->cv_L+1)) + ADDON);
-    print_double(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
+    print_double_cv(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
   }
   return(cv_mem->cv_etaqp1);
 }
@@ -3540,9 +3540,9 @@ static void cvChooseEta(CVodeMem cv_mem)
 {
   realtype etam;
 
-  //print_double(&cv_mem->cv_etaqm1,1,"cv_etaqm1605");
-  //print_double(&cv_mem->cv_etaq,1,"cv_etaq1605");
-  //print_double(&cv_mem->cv_etaqp1,1,"cv_etaqp1605");
+  //print_double_cv(&cv_mem->cv_etaqm1,1,"cv_etaqm1605");
+  //print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1605");
+  //print_double_cv(&cv_mem->cv_etaqp1,1,"cv_etaqp1605");
   etam = SUNMAX(cv_mem->cv_etaqm1, SUNMAX(cv_mem->cv_etaq, cv_mem->cv_etaqp1));
   print_double_cv(&etam,1,"etam1605");
   if (etam < THRESH) {
