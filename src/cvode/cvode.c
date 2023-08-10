@@ -381,7 +381,7 @@ static int cvRootfind(CVodeMem cv_mem);
  */
 
 void print_double_cv(double *x, int len, const char *s){
-#ifndef USE_PRINT_ARRAYS
+#ifdef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%.17le\n",s,i,x[i]);
   }
@@ -389,7 +389,7 @@ void print_double_cv(double *x, int len, const char *s){
 }
 
 void print_int_cv(int *x, int len, const char *s){
-#ifndef USE_PRINT_ARRAYS
+#ifdef USE_PRINT_ARRAYS
   for (int i=0; i<len; i++){
     printf("%s[%d]=%d\n",s,i,x[i]);
   }
