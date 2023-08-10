@@ -46,6 +46,12 @@ realtype SUNRpowerR(realtype base, realtype exponent)
 {
   if (base <= ZERO) return(ZERO);
 
+#ifndef EQUALLIZE_CPU_CUDA_POW
+  if(exponent==(1./2)) return sqrt(base);
+  if(exponent==(1./3)) return sqrt(sqrt(sqrt(base)));
+  if(exponent==(1./4)) return sqrt(sqrt(sqrt(base)));
+#endif
+
 #if defined(SUNDIALS_USE_GENERIC_MATH)
   return((realtype) pow((double) base, (double) exponent));
 #elif defined(SUNDIALS_DOUBLE_PRECISION)
