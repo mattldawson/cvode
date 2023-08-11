@@ -45,7 +45,7 @@ realtype SUNRpowerI(realtype base, int exponent)
 realtype SUNRpowerR(realtype base, realtype exponent)
 {
   if (base <= ZERO) return(ZERO);
-#ifndef EQUALLIZE_CPU_CUDA_POW
+#ifdef EQUALLIZE_CPU_CUDA_POW
   if(exponent==(1./2)) return sqrt(base);
   if(exponent==(1./3)) return sqrt(sqrt(base));
   if(exponent==(1./4)) return sqrt(sqrt(base));
