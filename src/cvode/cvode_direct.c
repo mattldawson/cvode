@@ -639,7 +639,7 @@ int cvDlsInitialize(CVodeMem cv_mem)
   for (int i = 0; i <= cv_mem->nrows; i++)
     cv_mem->diA[i] = SM_INDEXPTRS_S(cvdls_mem->A)[i];
 #endif
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   cv_mem->Ap=((SUNMatrixContent_Sparse)(cvdls_mem->A->content))->data;
   cv_mem->savedJp=((SUNMatrixContent_Sparse)(cvdls_mem->savedJ->content))->data;
 #endif

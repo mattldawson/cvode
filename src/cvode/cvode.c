@@ -654,7 +654,7 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
 
   cv_mem->cv_MallocDone = SUNTRUE;
 
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   cv_mem->cv_zn0p=N_VGetArrayPointer(cv_mem->cv_zn[0]);
   cv_mem->cv_zn1p=N_VGetArrayPointer(cv_mem->cv_zn[1]);
   cv_mem->cv_zn2p=N_VGetArrayPointer(cv_mem->cv_zn[2]);
@@ -1061,8 +1061,8 @@ void exportCounters(CVodeMem cv_mem) {
   double timeKLUSparse_tmp = cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve;
   double timeKLUSparse=timeKLUSparse_tmp;
 
-  MPI_Reduce(&cv_mem->timecvStep, &timecvStep, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-  MPI_Reduce(&timeKLUSparse_tmp, &timeKLUSparse, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  //MPI_Reduce(&cv_mem->timecvStep, &timecvStep, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
+  //MPI_Reduce(&timeKLUSparse_tmp, &timeKLUSparse, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
 
 }
 
@@ -1136,7 +1136,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
   if (itask == CV_NORMAL) cv_mem->cv_toutc = tout;
   cv_mem->cv_taskc = itask;
 
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   double *youtp=N_VGetArrayPointer(yout);
   cv_mem->cv_ewtp=N_VGetArrayPointer(cv_mem->cv_ewt);
   cv_mem->cv_yp=N_VGetArrayPointer(cv_mem->cv_y);
@@ -1417,7 +1417,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
     /* Reset and check ewt */
     if (cv_mem->cv_nst > 0) {
 
-      print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_efun0");
+      //print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_efun0");
       ewtsetOK = cv_mem->cv_efun(cv_mem->cv_zn[0], cv_mem->cv_ewt, cv_mem->cv_e_data);
       //print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_efun1");
 
@@ -2372,7 +2372,7 @@ static void cvIncreaseBDF(CVodeMem cv_mem)
   for (j=2; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_L], ONE,
                  cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1687");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1687");
 }
 
 /*
@@ -2404,7 +2404,7 @@ static void cvDecreaseBDF(CVodeMem cv_mem)
     N_VLinearSum(-cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_q],
                  ONE, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
   //print_double_cv(cv_mem->cv_zn2p,73,"dzn2_1469");
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1460");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1460");
 }
 
 /*
@@ -2425,7 +2425,7 @@ static void cvRescale(CVodeMem cv_mem)
     N_VScale(factor, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
     factor *= cv_mem->cv_eta;
   }
-  print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1290");
+  //print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1290");
   //print_double_cv(cv_mem->cv_zn1p,73,"dzn1_1290");
   cv_mem->cv_h = cv_mem->cv_hscale * cv_mem->cv_eta;
   cv_mem->cv_next_h = cv_mem->cv_h;
@@ -2453,7 +2453,7 @@ static void cvPredict(CVodeMem cv_mem)
       cv_mem->cv_tn = cv_mem->cv_tstop;
   }
   N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_last_yn);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1432");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1432");
   //print_double_cv(cv_mem->cv_zn1p,73,"dzn1_1432");
   //printf("cv_q %d\n",cv_mem->cv_q);
   for (k = 1; k <= cv_mem->cv_q; k++)
@@ -2911,7 +2911,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     //print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-    print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
+    //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
     //print_double_cv(cv_mem->cv_yp,73,"dcv_y1144");
 #ifdef CAMP_PROFILING
     cv_mem->timeDerivNewton+= MPI_Wtime() - startDerivNewton;
@@ -2931,7 +2931,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
-      print_double_cv(cv_mem->cv_ftempp,73,"cv_ftempp1160");
+      //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftempp1160");
 
 #ifdef CAMP_PROFILING
       cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
@@ -3013,7 +3013,7 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     //print_double_cv(cv_mem->cv_tempvp,73,"dtempvN_VLinearSum2");
     N_VLinearSum(cv_mem->cv_gamma, cv_mem->cv_ftemp, -ONE,
                  cv_mem->cv_tempv, cv_mem->cv_tempv);
-    print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_lsolve1");
+    //print_double_cv(cv_mem->cv_tempvp,73,"dtempvcv_lsolve1");
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
@@ -3202,7 +3202,7 @@ static int cvHandleNFlag(CVodeMem cv_mem, int *nflagPtr, realtype saved_t,
   /* Reduce step size; return to reattempt the step */
 
   cv_mem->cv_eta = SUNMAX(ETACF, cv_mem->cv_hmin / SUNRabs(cv_mem->cv_h));
-  print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1337");
+  //print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1337");
   *nflagPtr = PREV_CONV_FAIL;
   cvRescale(cv_mem);
 
@@ -3222,13 +3222,13 @@ static void cvRestore(CVodeMem cv_mem, realtype saved_t)
   int j, k;
 
   cv_mem->cv_tn = saved_t;
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1299");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1299");
   for (k = 1; k <= cv_mem->cv_q; k++)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
   N_VScale(ONE, cv_mem->cv_last_yn, cv_mem->cv_zn[0]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1306");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1306");
 }
 
 /*
@@ -3325,7 +3325,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   /* If already at order 1, restart: reload zn from scratch */
 
   cv_mem->cv_eta = SUNMAX(ETAMIN, cv_mem->cv_hmin / SUNRabs(cv_mem->cv_h));
-  print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1529");
+  //print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1529");
   cv_mem->cv_h *= cv_mem->cv_eta;
   cv_mem->cv_next_h = cv_mem->cv_h;
   cv_mem->cv_hscale = cv_mem->cv_h;
@@ -3410,7 +3410,7 @@ static void cvPrepareNextStep(CVodeMem cv_mem, realtype dsm)
     cv_mem->cv_qprime = cv_mem->cv_q;
     cv_mem->cv_hprime = cv_mem->cv_h;
     cv_mem->cv_eta = ONE;
-    print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1631");
+    //print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1631");
     return;
   }
 
@@ -3426,7 +3426,7 @@ static void cvPrepareNextStep(CVodeMem cv_mem, realtype dsm)
   //double cv_etaq_sqrt=sqrt(BIAS2dsm);
   //print_double_cv(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
   cv_mem->cv_etaq = ONE /(SUNRpowerR(BIAS2*dsm,ONE/cv_mem->cv_L) + ADDON);
-  print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1639");
+  //print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1639");
   //print_int_cv(&cv_mem->cv_L,1,"cv_L1674");
   /* If no order change, adjust eta and acor in cvSetEta and return */
   if (cv_mem->cv_qwait != 0) {
@@ -3468,7 +3468,7 @@ static void cvSetEta(CVodeMem cv_mem)
     cv_mem->cv_hprime = cv_mem->cv_h * cv_mem->cv_eta;
     if (cv_mem->cv_qprime < cv_mem->cv_q) cv_mem->cv_nscon = 0;
   }
-  print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1618");
+  //print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1618");
 }
 
 /*
@@ -3510,7 +3510,7 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem)
                  cv_mem->cv_acor, cv_mem->cv_tempv);
     //print_double_cv(cv_mem->cv_tempvp,73,"dtempv1658");
     dup = N_VWrmsNorm(cv_mem->cv_tempv, cv_mem->cv_ewt) * cv_mem->cv_tq[3];
-    print_double_cv(&dup,1,"dup1728");
+    //print_double_cv(&dup,1,"dup1728");
     print_int_cv(&cv_mem->cv_L,1,"cv_L1728");
     //double BIAS3dup=BIAS3*dup;
     //print_double_cv(&BIAS3dup,1,"BIAS3dup");
@@ -3519,7 +3519,7 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem)
     //double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
     //print_double_cv(&cv_etaq_power,1,"cv_etaq_power1734");
     cv_mem->cv_etaqp1 = ONE / (SUNRpowerR(BIAS3*dup, ONE/(cv_mem->cv_L+1)) + ADDON);
-    print_double_cv(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
+    //print_double_cv(&cv_mem->cv_etaqp1,1,"cv_etaqp1728");
   }
   return(cv_mem->cv_etaqp1);
 }
@@ -3544,10 +3544,10 @@ static void cvChooseEta(CVodeMem cv_mem)
   //print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1605");
   //print_double_cv(&cv_mem->cv_etaqp1,1,"cv_etaqp1605");
   etam = SUNMAX(cv_mem->cv_etaqm1, SUNMAX(cv_mem->cv_etaq, cv_mem->cv_etaqp1));
-  print_double_cv(&etam,1,"etam1605");
+  //print_double_cv(&etam,1,"etam1605");
   if (etam < THRESH) {
     cv_mem->cv_eta = ONE;
-    print_double_cv(&cv_mem->cv_eta,1,"cv_eta1609");
+    //print_double_cv(&cv_mem->cv_eta,1,"cv_eta1609");
     cv_mem->cv_qprime = cv_mem->cv_q;
     return;
   }
@@ -3555,19 +3555,19 @@ static void cvChooseEta(CVodeMem cv_mem)
   if (etam == cv_mem->cv_etaq) {
 
     cv_mem->cv_eta = cv_mem->cv_etaq;
-    print_double_cv(&cv_mem->cv_eta,1,"cv_eta1616");
+    //print_double_cv(&cv_mem->cv_eta,1,"cv_eta1616");
     cv_mem->cv_qprime = cv_mem->cv_q;
 
   } else if (etam == cv_mem->cv_etaqm1) {
 
     cv_mem->cv_eta = cv_mem->cv_etaqm1;
-    print_double_cv(&cv_mem->cv_eta,1,"cv_eta1620");
+    //print_double_cv(&cv_mem->cv_eta,1,"cv_eta1620");
     cv_mem->cv_qprime = cv_mem->cv_q - 1;
 
   } else {
 
     cv_mem->cv_eta = cv_mem->cv_etaqp1;
-    print_double_cv(&cv_mem->cv_eta,1,"cv_eta1624");
+    //print_double_cv(&cv_mem->cv_eta,1,"cv_eta1624");
     cv_mem->cv_qprime = cv_mem->cv_q + 1;
 
     if (cv_mem->cv_lmm == CV_BDF) {
@@ -3582,7 +3582,7 @@ static void cvChooseEta(CVodeMem cv_mem)
 
     }
   }
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1581");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1581");
 }
 
 /*
