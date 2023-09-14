@@ -3264,6 +3264,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
                  cv_mem->cv_zn[0]);
     min_val = ZERO;
   }
+  print_double_cv(cv_mem->cv_zn0p,73,"dzn1487");
   //print_double_cv(&cv_mem->cv_tq[2],1,"cv_tq_21504");
   //print_double_cv(&cv_mem->cv_acnrm,1,"cv_acnrm1504");
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
@@ -3324,7 +3325,6 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   cv_mem->cv_qwait = LONG_WAIT;
   cv_mem->cv_nscon = 0;
 
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1505");
   SUNDIALS_DEBUG_PRINT("Request derivative");
   retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_zn[0],
                         cv_mem->cv_tempv, cv_mem->cv_user_data);
@@ -3374,13 +3374,13 @@ static void cvCompleteStep(CVodeMem cv_mem)
   for (j=0; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_acor, ONE,
                  cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
+  print_double_cv(cv_mem->cv_zn0p,73,"dzn1554");
   cv_mem->cv_qwait--;
   if ((cv_mem->cv_qwait == 1) && (cv_mem->cv_q != cv_mem->cv_qmax)) {
     N_VScale(ONE, cv_mem->cv_acor, cv_mem->cv_zn[cv_mem->cv_qmax]);
     cv_mem->cv_saved_tq5 = cv_mem->cv_tq[5];
     cv_mem->cv_indx_acor = cv_mem->cv_qmax;
   }
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1554");
 }
 
 /*
