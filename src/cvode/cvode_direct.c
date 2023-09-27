@@ -851,19 +851,6 @@ void cudaDeviceSpmv_2(CVodeMem cv_mem, double* dx, double* db, double* dA, int* 
 
 void cudaDevicedotxy_2(CVodeMem cv_mem, double *g_idata1, double *g_idata2,
                                   double *g_odata){
- /*
-  double sum=0;
-  double sdata[cv_mem->nrows];
-  for(int i=0;i<cv_mem->nrows;i++){
-    sdata[i]=g_idata1[i]*g_idata2[i];
-  }
-  //print_double2(sdata,73,"sdata");
-  for(int i=0;i<cv_mem->nrows;i++){
-    sum+=sdata[i];
-  }
-  print_double2(&sum,1,"sdata");
-  *g_odata=sum;
-  */
   *g_odata=0.;
   for(int i=0;i<cv_mem->nrows;i++){
     *g_odata+=g_idata1[i]*g_idata2[i];
