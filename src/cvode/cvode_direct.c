@@ -55,8 +55,6 @@
 
 #ifdef USE_BCG
 #include <math.h>
-#define BCG_MAXIT 1000
-#define BCG_TOLMAX 1.0E-30
 #endif
 
 
@@ -921,13 +919,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     md->dr0h[i] = md->dr0[i];
   }
   int it=0;
-  while(it<BCG_MAXIT && temp1>BCG_TOLMAX){
-    //print_double2(md->dr0,73,"dr0");
-    //print_double2(md->dr0h,73,"dr0h");
+  while(it<1000 && temp1>1.0E-30){
     cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0h, &rho1);
-    //print_double2(&rho1,1,"rho1");
     beta = (rho1 / rho0) * (alpha / omega0);
-    //print_double2(&beta,1,"beta");
     for (int i = 0; i < cv_mem->nrows; i++) {
         md->dp0[i] =
             beta * md->dp0[i] + md->dr0[i] - md->dn0[i] * omega0 * beta;
@@ -945,7 +939,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
-    //print_double2(md->ddiag,73,"ddiag");
     cudaDevicedotxy_2(cv_mem,md->dy, md->dr0, &temp1);
     cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0, &temp2);
     omega0 = temp1 / temp2;
@@ -955,18 +948,11 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
       md->dt[i] = 0.0;
     }
     cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0, &temp1);
-    //print_double2(md->dx,73,"dx");
-    //print_double2(&temp1,1,"temp1");
     temp1 = sqrt(temp1);
-    //print_double2(&temp1,1,"sqrt(temp1)");
     rho0 = rho1;
     it++;
-    //printf("end iter %d BCG CPU\n",it);
   }
-  //print_double2(&temp1,1,"temp1");
-  //printf("end BCG CPU\n");
-  //exit(0);
-  if(it>=BCG_MAXIT){
+  if(it>=1000){
     printf("it>=BCG_MAXIT\n %d>%d",it,BCG_MAXIT);
     exit(0);
   }
