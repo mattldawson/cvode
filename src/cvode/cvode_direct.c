@@ -55,6 +55,7 @@
 
 #ifdef USE_BCG
 #include <math.h>
+#define BCG_MAXIT
 #endif
 
 
@@ -919,7 +920,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     md->dr0h[i] = md->dr0[i];
   }
   int it=0;
-  while(it<1000 && temp1>1.0E-30){
+  while(it<BCG_MAXIT && temp1>1.0E-30){
     cudaDevicedotxy_2(cv_mem,md->dr0, md->dr0h, &rho1);
     beta = (rho1 / rho0) * (alpha / omega0);
     for (int i = 0; i < cv_mem->nrows; i++) {
@@ -952,7 +953,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
     rho0 = rho1;
     it++;
   }
-  if(it>=1000){
+  if(it>=BCG_MAXIT){
     printf("it>=BCG_MAXIT\n %d>%d",it,BCG_MAXIT);
     exit(0);
   }
