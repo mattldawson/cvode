@@ -654,7 +654,7 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
 
   cv_mem->cv_MallocDone = SUNTRUE;
 
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   cv_mem->cv_zn0p=N_VGetArrayPointer(cv_mem->cv_zn[0]);
   cv_mem->cv_zn1p=N_VGetArrayPointer(cv_mem->cv_zn[1]);
   cv_mem->cv_zn2p=N_VGetArrayPointer(cv_mem->cv_zn[2]);
@@ -1134,7 +1134,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
   if (itask == CV_NORMAL) cv_mem->cv_toutc = tout;
   cv_mem->cv_taskc = itask;
 
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   double *youtp=N_VGetArrayPointer(yout);
   cv_mem->cv_ewtp=N_VGetArrayPointer(cv_mem->cv_ewt);
   cv_mem->cv_yp=N_VGetArrayPointer(cv_mem->cv_y);

@@ -63,7 +63,7 @@ extern "C" {
 
 typedef struct CVodeMemRec {
 
-#ifndef CAMP_DEBUG_NVECTOR
+#ifdef CAMP_DEBUG_NVECTOR
   double *Ap;
   double *savedJp;
   double *cv_ewtp;
