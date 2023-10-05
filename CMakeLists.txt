@@ -45,8 +45,7 @@ SET(KLU_P ${CMAKE_CURRENT_SOURCE_DIR}/../SuiteSparse)
 SET(EXAMPLES_INSTALL ON)
 SET(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
 #SET(EXAMPLES_INSTALL_PATH ${CMAKE_CURRENT_SOURCE_DIR}/install/examples)
-#SET(MPI_ENABLE ON) #todo fix to allow CAMP_PROFILING
-#SET(CAMP_PROFILING ON)
+#SET(MPI_ENABLE ON)
 
 #Fix copy of linked libraries during install of libraries
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -136,16 +135,6 @@ INCLUDE(SundialsDeprecated)
 # ---------------------------------------------------------------
 
 OPTION(SUNDIALS_DEBUG "Include debugging functions" OFF)
-
-# ---------------------------------------------------------------
-# Profiling functions?
-# ---------------------------------------------------------------
-
-OPTION(CAMP_PROFILING "Include debugging functions" OFF)
-IF(CAMP_PROFILING)
-  MESSAGE("CAMP_PROFILING ENABLED")
-  ADD_DEFINITIONS(-DCAMP_PROFILING)
-ENDIF(CAMP_PROFILING)
 
 # ---------------------------------------------------------------
 # Which modules to build?

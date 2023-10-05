@@ -28,17 +28,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-
 #include "cvode_impl.h"
 #include "cvode_direct_impl.h"
 #include <sundials/sundials_math.h>
 #include <sunmatrix/sunmatrix_band.h>
 #include <sunmatrix/sunmatrix_dense.h>
 #include <sunmatrix/sunmatrix_sparse.h>
-
-#ifdef CAMP_PROFILING
 #include <mpi.h>
-#endif
 
 /*=================================================================
   FUNCTION SPECIFIC CONSTANTS
@@ -711,17 +707,9 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
       return(-1);
     }
 
-#ifdef CAMP_PROFILING
-    double startJac=MPI_Wtime();
-#endif
-
     retval = cvdls_mem->jac(cv_mem->cv_tn, ypred,
                             fpred, cvdls_mem->A,
                             cvdls_mem->J_data, vtemp1, vtemp2, vtemp3);
-#ifdef CAMP_PROFILING
-    cv_mem->timeJac+= MPI_Wtime() - startJac;
-    cv_mem->counterJac++;
-#endif
 
    if (retval < 0) {
       cvProcessError(cv_mem, CVDLS_JACFUNC_UNRECVR, "CVDLS",
@@ -756,10 +744,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef CAMP_PROFILING
-  double startKLUSparseSetup = MPI_Wtime();
-#endif
-
 #ifdef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
@@ -782,11 +766,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   }
 #else
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
-#endif
-
-#ifdef CAMP_PROFILING
-  cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
-  cv_mem->counterKLUSparseSetup++;
 #endif
 
 return(cvdls_mem->last_flag);
@@ -885,10 +864,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   }
   cvdls_mem = (CVDlsMem) cv_mem->cv_lmem;
 
-#ifdef CAMP_PROFILING
-  double startKLUSparseSolve = MPI_Wtime();
-#endif
-
 #ifdef USE_BCG
   CVodeMem md = cv_mem;
   //print_swapCSC_CSR_ODE(md);
@@ -953,11 +928,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
   double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
-#endif
-
-#ifdef CAMP_PROFILING
-  cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
-  cv_mem->counterKLUSparseSolve++;
 #endif
 
   //print_double2(xp,73,"dx");

@@ -296,12 +296,8 @@ void sundials_debug_print_real(CVodeMem cv_mem, const char *message, booleantype
 
 #define RDIV      TWO
 #define MSBP       20
-
 #include <time.h>
-
-#ifdef CAMP_PROFILING
 #include <mpi.h>
-#endif
 
 /*=================================================================*/
 /*             Private Helper Functions Prototypes                 */
@@ -611,28 +607,8 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
 
   cv_mem->cv_irfnd   = 0;
 
-//Profiling
-#ifdef CAMP_PROFILING
-  cv_mem->counterNewtonIt=0;
-  cv_mem->counterLinSolSetup=0;
-  cv_mem->counterLinSolSolve=0;
-  cv_mem->countercvStep=0;
-  cv_mem->counterDerivNewton=0;
-  cv_mem->counterKLUSparseSetup=0;
-  cv_mem->counterKLUSparseSolve=0;
-  cv_mem->counterDerivSolve=0;
-  cv_mem->counterJac=0;
+  cv_mem->timecvStep = 0.;
 
-  cv_mem->timeNewtonIt=PMC_TINY;
-  cv_mem->timeLinSolSetup=PMC_TINY;
-  cv_mem->timeLinSolSolve=PMC_TINY;
-  cv_mem->timecvStep=PMC_TINY;
-  cv_mem->timeDerivNewton=PMC_TINY;
-  cv_mem->timeKLUSparseSetup=PMC_TINY;
-  cv_mem->timeKLUSparseSolve=PMC_TINY;
-  cv_mem->timeDerivSolve=PMC_TINY;
-  cv_mem->timeJac=PMC_TINY;
-#endif
 
   /* Initialize other integrator optional outputs */
 
@@ -1048,25 +1024,6 @@ int CVodeRootInit(void *cvode_mem, int nrtfn, CVRootFn g)
   return(CV_SUCCESS);
 }
 
-#ifdef CAMP_PROFILING
-
-void exportCounters(CVodeMem cv_mem) {
-
-  int rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
-  double timecvStep=cv_mem->timecvStep;
-  double timeKLUSparse_tmp = cv_mem->timeKLUSparseSetup+cv_mem->timeKLUSparseSolve;
-  double timeKLUSparse=timeKLUSparse_tmp;
-
-  //MPI_Reduce(&cv_mem->timecvStep, &timecvStep, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-  //MPI_Reduce(&timeKLUSparse_tmp, &timeKLUSparse, 1, MPI_DOUBLE, MPI_MAX, 0, MPI_COMM_WORLD);
-
-}
-
-#endif
-
-
 /*-----------------------------------------------------------------*/
 
 /*
@@ -1470,16 +1427,11 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout,
         cvProcessError(cv_mem, CV_WARNING, "CVODE", "CVode", MSGCV_HNIL_DONE);
     }
 
-#ifdef CAMP_PROFILING
     double startcvStep=MPI_Wtime();
-#endif
     /* Call cvStep to take a step */
-    print_double_cv(cv_mem->cv_zn0p,73,"dzn1858");
+    //print_double_cv(cv_mem->cv_zn0p,73,"dzn1858");
     kflag = cvStep(cv_mem);
-#ifdef CAMP_PROFILING
     cv_mem->timecvStep+= MPI_Wtime() - startcvStep;
-    cv_mem->countercvStep++;
-#endif
 
     /* Process failed step cases, and exit loop */
     if (kflag != CV_SUCCESS) {
@@ -1661,11 +1613,6 @@ void CVodeFree(void **cvode_mem)
   if (*cvode_mem == NULL) return;
 
   cv_mem = (CVodeMem) (*cvode_mem);
-
-#ifdef CAMP_PROFILING
-  exportCounters(cv_mem);
-#endif
-
   cvFreeVectors(cv_mem);
 
   if (cv_mem->cv_lfree != NULL) cv_mem->cv_lfree(cv_mem);
@@ -2368,7 +2315,7 @@ static void cvIncreaseBDF(CVodeMem cv_mem)
   for (j=2; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_L], ONE,
                  cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1687");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1687");
 }
 
 /*
@@ -2399,7 +2346,7 @@ static void cvDecreaseBDF(CVodeMem cv_mem)
   for (j=2; j < cv_mem->cv_q; j++)
     N_VLinearSum(-cv_mem->cv_l[j], cv_mem->cv_zn[cv_mem->cv_q],
                  ONE, cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1460");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1460");
 }
 
 /*
@@ -2447,14 +2394,14 @@ static void cvPredict(CVodeMem cv_mem)
       cv_mem->cv_tn = cv_mem->cv_tstop;
   }
   N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_last_yn);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1432");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1432");
   //printf("cv_q %d\n",cv_mem->cv_q);
   for (k = 1; k <= cv_mem->cv_q; k++)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
 
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1439");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1439");
 }
 
 /*
@@ -2712,10 +2659,7 @@ static void cvSetTqBDF(CVodeMem cv_mem, realtype hsum, realtype alpha0,
 static int cvNls(CVodeMem cv_mem, int nflag)
 {
   int flag = CV_SUCCESS;
-
-#ifdef CAMP_PROFILING
   double startNewtonIt=MPI_Wtime();
-#endif
   switch(cv_mem->cv_iter) {
   case CV_FUNCTIONAL:
     flag = cvNlsFunctional(cv_mem);
@@ -2724,11 +2668,6 @@ static int cvNls(CVodeMem cv_mem, int nflag)
     flag = cvNlsNewton(cv_mem, nflag);
     break;
   }
-
-#ifdef CAMP_PROFILING
-  cv_mem->timeNewtonIt+= MPI_Wtime() - startNewtonIt;
-  cv_mem->counterNewtonIt++;
-#endif
 
   return(flag);
 }
@@ -2873,7 +2812,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   N_VConst(ZERO, cv_mem->cv_acor_init);
   if (cv_mem->cv_ghfun) {
     SUNDIALS_DEBUG_PRINT("Calling guess helper");
-    print_double_cv(cv_mem->cv_zn0p,73,"dzn1174");
+    //print_double_cv(cv_mem->cv_zn0p,73,"dzn1174");
     //print_double_cv(cv_mem->cv_last_ynp,73,"cv_last_yn1175");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn, cv_mem->cv_ftemp);
     //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppN_VLinearSum2");
@@ -2891,25 +2830,18 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
   for(;;) {
 
     /* Load prediction into y vector */
-    print_double_cv(cv_mem->cv_zn0p,73,"dzn1139");
+    //print_double_cv(cv_mem->cv_zn0p,73,"dzn1139");
     //print_double_cv(cv_mem->cv_acor_initp,73,"cv_acor_init1140");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init, cv_mem->cv_y);
     //print_double_cv(cv_mem->cv_yp,73,"dcv_y1139");
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
-#ifdef CAMP_PROFILING
-    double startDerivNewton=MPI_Wtime();
-#endif
     //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f1");
     //print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
     //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftemppcv_f2");
     //print_double_cv(cv_mem->cv_yp,73,"dcv_y1144");
-#ifdef CAMP_PROFILING
-    cv_mem->timeDerivNewton+= MPI_Wtime() - startDerivNewton;
-    cv_mem->counterDerivNewton++;
-#endif
 
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
     cv_mem->cv_nfe++;
@@ -2918,18 +2850,10 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
     if (callSetup) {
       SUNDIALS_DEBUG_PRINT("Doing lsetup");
-#ifdef CAMP_PROFILING
-      double startLinSolSetup=MPI_Wtime();
-#endif
       ier = cv_mem->cv_lsetup(cv_mem, convfail, cv_mem->cv_y,
                               cv_mem->cv_ftemp, &(cv_mem->cv_jcur),
                               vtemp1, vtemp2, vtemp3);
       //print_double_cv(cv_mem->cv_ftempp,73,"cv_ftempp1160");
-
-#ifdef CAMP_PROFILING
-      cv_mem->timeLinSolSetup+= MPI_Wtime() - startLinSolSetup;
-      cv_mem->counterLinSolSetup++;
-#endif
 
       SUNDIALS_DEBUG_PRINT_INT("Returned from lsetup", ier+100);
       cv_mem->cv_nsetups++;
@@ -2948,16 +2872,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     /* Do the Newton iteration */
     SUNDIALS_DEBUG_PRINT("Doing Newton iteration");
 
-#ifdef CAMP_PROFILING
-    double startLinSolSolve=MPI_Wtime();
-#endif
-
     ier = cvNewtonIteration(cv_mem);
-
-#ifdef CAMP_PROFILING
-    cv_mem->timeLinSolSolve+= MPI_Wtime() - startLinSolSolve;
-    cv_mem->counterLinSolSolve++;
-#endif
 
     SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
@@ -3102,16 +3017,9 @@ static int cvNewtonIteration(CVodeMem cv_mem)
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
-#ifdef CAMP_PROFILING
-    double startDerivSolve=MPI_Wtime();
-#endif
     //print_double_cv(cv_mem->cv_yp,73,"dcv_y1137");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y,
                           cv_mem->cv_ftemp, cv_mem->cv_user_data);
-#ifdef CAMP_PROFILING
-    cv_mem->timeDerivSolve+= MPI_Wtime() - startDerivSolve;
-    cv_mem->counterDerivSolve++;
-#endif
 
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval+100);
@@ -3214,13 +3122,13 @@ static void cvRestore(CVodeMem cv_mem, realtype saved_t)
   int j, k;
 
   cv_mem->cv_tn = saved_t;
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1299");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1299");
   for (k = 1; k <= cv_mem->cv_q; k++)
     for (j = cv_mem->cv_q; j >= k; j--)
       N_VLinearSum(ONE, cv_mem->cv_zn[j-1], -ONE,
                    cv_mem->cv_zn[j], cv_mem->cv_zn[j-1]);
   N_VScale(ONE, cv_mem->cv_last_yn, cv_mem->cv_zn[0]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1306");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1306");
 }
 
 /*
@@ -3264,7 +3172,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
                  cv_mem->cv_zn[0]);
     min_val = ZERO;
   }
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1487");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1487");
   //print_double_cv(&cv_mem->cv_tq[2],1,"cv_tq_21504");
   //print_double_cv(&cv_mem->cv_acnrm,1,"cv_acnrm1504");
   dsm = cv_mem->cv_acnrm * cv_mem->cv_tq[2];
@@ -3374,7 +3282,7 @@ static void cvCompleteStep(CVodeMem cv_mem)
   for (j=0; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_acor, ONE,
                  cv_mem->cv_zn[j], cv_mem->cv_zn[j]);
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1554");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1554");
   cv_mem->cv_qwait--;
   if ((cv_mem->cv_qwait == 1) && (cv_mem->cv_q != cv_mem->cv_qmax)) {
     N_VScale(ONE, cv_mem->cv_acor, cv_mem->cv_zn[cv_mem->cv_qmax]);
@@ -3572,7 +3480,7 @@ static void cvChooseEta(CVodeMem cv_mem)
 
     }
   }
-  print_double_cv(cv_mem->cv_zn0p,73,"dzn1581");
+  //print_double_cv(cv_mem->cv_zn0p,73,"dzn1581");
 }
 
 /*
