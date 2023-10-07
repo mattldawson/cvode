@@ -317,8 +317,10 @@ typedef struct CVodeMemRec {
   long int cv_nge;         /* counter for g evaluations                       */
   booleantype *cv_gactive; /* array with active/inactive event functions      */
   int cv_mxgnull;          /* number of warning messages about possible g==0  */
+  unsigned int iTimecvStep;
+  double meanTimecvStep;
+  double varianceTimecvStep;
   double timecvStep;
-
 } *CVodeMem;
 
 /*

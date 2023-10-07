@@ -605,6 +605,9 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->cv_nscon   = 0;
   cv_mem->cv_nge     = 0;
   cv_mem->cv_irfnd   = 0;
+  cv_mem->iTimecvStep = 1;
+  cv_mem->meanTimecvStep = 0.;
+  cv_mem->varianceTimecvStep = 0.;
   cv_mem->timecvStep = 0.;
 
   /* Initialize other integrator optional outputs */
