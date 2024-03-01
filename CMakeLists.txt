@@ -784,6 +784,7 @@ ENDIF(F77SCHEME_FOUND)
 IF(MPI_ENABLE)
   # show command to run MPI codes (defaults to mpirun)
   SHOW_VARIABLE(MPI_RUN_COMMAND STRING "MPI run command" "mpirun")
+  add_definitions(-DMPI_ENABLE)
 
   INCLUDE(SundialsMPIC)
   IF(MPIC_FOUND)

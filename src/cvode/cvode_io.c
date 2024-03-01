@@ -818,8 +818,6 @@ int CVodeGetCurrentTime(void *cvode_mem, realtype *tcur)
   return(CV_SUCCESS);
 }
 
-#ifdef CAMP_PROFILING
-
 int CVodeGetcounterLS(void *cvode_mem, int *tcur)
 {
   CVodeMem cv_mem;
@@ -872,41 +870,6 @@ int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters)
 
   return(CV_SUCCESS);
 }
-
-#else
-
-int CVodeGetcounterLS(void *cvode_mem, int *tcur)
-{
-  *tcur = 0;
-
-  return(CV_SUCCESS);
-}
-
-int CVodeGettimeLS(void *cvode_mem, double *tcur)
-{
-  *tcur = 0;
-
-  return(CV_SUCCESS);
-}
-
-int CVodeGettimesCounters(void *cvode_mem, double *tcur, int *counters)
-{
-  tcur[0] = 0.;
-  tcur[13] = 0.;
-
-  counters[0] = 0;
-  counters[2] = 0;
-
-  return(CV_SUCCESS);
-}
-
-int CVodeResettimesCounters(void *cvode_mem, double *tcur, int *counters)
-{
-
-  return(CV_SUCCESS);
-}
-
-#endif
 
 /*
  * CVodeGetTolScaleFactor

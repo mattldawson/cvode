@@ -595,7 +595,6 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->cv_irfnd   = 0;
 
 //Profiling
-#ifdef CAMP_PROFILING
   cv_mem->counterNewtonIt=0;
   cv_mem->counterLinSolSetup=0;
   cv_mem->counterLinSolSolve=0;
@@ -615,7 +614,6 @@ int CVodeInit(void *cvode_mem, CVRhsFn f, realtype t0, N_Vector y0)
   cv_mem->timeKLUSparseSolve=PMC_TINY;
   cv_mem->timeDerivSolve=PMC_TINY;
   cv_mem->timeJac=PMC_TINY;
-#endif
 
   /* Initialize other integrator optional outputs */
 
@@ -2898,9 +2896,8 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
 
 #ifdef CAMP_PROFILING
     cv_mem->timeLinSolSolve+= MPI_Wtime() - startLinSolSolve;
-    cv_mem->counterLinSolSolve++;
 #endif
-
+    cv_mem->counterLinSolSolve++;
     SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
     /* If there is a convergence failure and the Jacobian-related

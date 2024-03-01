@@ -720,16 +720,19 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
 
 #ifdef CAMP_PROFILING
   double startKLUSparseSetup = MPI_Wtime();
+#else
+  double startKLUSparseSetup = clock();
 #endif
 
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 
 #ifdef CAMP_PROFILING
   cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
-  cv_mem->counterKLUSparseSetup++;
+#else
+  cv_mem->timeKLUSparseSetup+= (clock() - startKLUSparseSetup) /CLOCKS_PER_SEC;
 #endif
 
-return(cvdls_mem->last_flag);
+  return(cvdls_mem->last_flag);
 }
 
 
