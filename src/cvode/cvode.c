@@ -2898,7 +2898,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag)
     cv_mem->timeLinSolSolve+= MPI_Wtime() - startLinSolSolve;
 #endif
     cv_mem->counterLinSolSolve++;
-    printf("counterLinSolSolve %d\n",cv_mem->counterLinSolSolve);
+
     SUNDIALS_DEBUG_PRINT_INT("Returned from Newton iteration", ier+100);
 
     /* If there is a convergence failure and the Jacobian-related

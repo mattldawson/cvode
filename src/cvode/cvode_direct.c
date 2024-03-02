@@ -730,7 +730,6 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   cv_mem->timeKLUSparseSetup+= MPI_Wtime() - startKLUSparseSetup;
 #else
   cv_mem->timeKLUSparseSetup+= (clock() - startKLUSparseSetup) /CLOCKS_PER_SEC;
-  printf("timeKLUSparseSetup %le\n",cv_mem->timeKLUSparseSetup);
 #endif
 
   return(cvdls_mem->last_flag);
