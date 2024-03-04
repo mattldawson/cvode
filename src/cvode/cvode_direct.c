@@ -764,6 +764,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 
 #ifdef CAMP_PROFILING
   double startKLUSparseSolve = MPI_Wtime();
+#else
+  double startKLUSparseSolve = clock();
 #endif
 
   // call the generic linear system solver, and copy b to x
@@ -771,8 +773,11 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 
 #ifdef CAMP_PROFILING
   cv_mem->timeKLUSparseSolve+= MPI_Wtime() - startKLUSparseSolve;
-  cv_mem->counterKLUSparseSolve++;
+#else
+  cv_mem->timeKLUSparseSetup+= (clock() - startKLUSparseSolve) /CLOCKS_PER_SEC;
 #endif
+  cv_mem->counterKLUSparseSolve++;
+
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
