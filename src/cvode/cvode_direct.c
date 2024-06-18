@@ -768,7 +768,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred,
   cvdls_mem->last_flag = SUNLinSolSetup(cvdls_mem->LS, cvdls_mem->A);
 #endif
 
-return(cvdls_mem->last_flag);
+  return(cvdls_mem->last_flag);
 }
 
 #ifdef USE_BCG
@@ -927,14 +927,13 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight,
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
-  double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
 #endif
 
+  //  double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
   //print_double2(xp,73,"dx");
 
   //copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
-
   //scale the correction to account for change in gamma
   if ((cv_mem->cv_lmm == CV_BDF) && (cv_mem->cv_gamrat != ONE))
     N_VScale(TWO/(ONE + cv_mem->cv_gamrat), b, b);
