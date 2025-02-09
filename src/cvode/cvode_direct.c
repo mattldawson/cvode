@@ -52,6 +52,7 @@
 
 #ifdef USE_BCG
 #include <math.h>
+#include <string.h>
 #define BCG_MAXIT 1000
 #endif
 
