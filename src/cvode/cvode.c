@@ -2945,7 +2945,7 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
     // print_double_cv(cv_mem->cv_tempvp,86,"dtempvN_VLinearSum2");
     N_VLinearSum(cv_mem->cv_gamma, cv_mem->cv_ftemp, -ONE, cv_mem->cv_tempv,
                  cv_mem->cv_tempv);
-    print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve1");
+    // print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve1");
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
@@ -2954,8 +2954,8 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
                                cv_mem->cv_ftemp);
     SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval + 100);
     cv_mem->cv_nni++;
-    print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve2");
-    // print_double_cv(cv_mem->cv_yp,86,"dcv_y2994");
+    // print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve2");
+    //  print_double_cv(cv_mem->cv_yp,86,"dcv_y2994");
 
     if (retval < 0) return (CV_LSOLVE_FAIL);
 
@@ -3309,7 +3309,7 @@ static void cvCompleteStep(CVodeMem cv_mem) {
   for (j = 0; j <= cv_mem->cv_q; j++)
     N_VLinearSum(cv_mem->cv_l[j], cv_mem->cv_acor, ONE, cv_mem->cv_zn[j],
                  cv_mem->cv_zn[j]);
-  print_double_cv(cv_mem->cv_zn0p, 86, "dzn1554");
+  // print_double_cv(cv_mem->cv_zn0p, 86, "dzn1554");
   cv_mem->cv_qwait--;
   if ((cv_mem->cv_qwait == 1) && (cv_mem->cv_q != cv_mem->cv_qmax)) {
     N_VScale(ONE, cv_mem->cv_acor, cv_mem->cv_zn[cv_mem->cv_qmax]);
