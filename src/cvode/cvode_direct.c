@@ -50,7 +50,7 @@
 
 #include <time.h>
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #include <math.h>
 #include <string.h>
 #define BCG_MAXIT 1000
@@ -589,7 +589,7 @@ int cvDlsInitialize(CVodeMem cv_mem) {
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->nrows = SM_NP_S(cvdls_mem->A);
   cv_mem->ddiag = (double *)malloc(sizeof(double) * cv_mem->nrows);
   cv_mem->dr0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
@@ -716,7 +716,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred, N_Vector fpred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -743,7 +743,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred, N_Vector fpred,
   return (cvdls_mem->last_flag);
 }
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem cv_mem) {
   CVodeMem md = cv_mem;
   int n_row = cv_mem->nrows;
@@ -836,7 +836,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   }
   cvdls_mem = (CVDlsMem)cv_mem->cv_lmem;
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   CVodeMem md = cv_mem;
   // print_swapCSC_CSR_ODE(md);
   // print_double2(md->dA,md->nnz,"dA");
