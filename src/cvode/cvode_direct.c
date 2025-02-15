@@ -50,7 +50,7 @@
 
 #include <time.h>
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 #include <math.h>
 #include <string.h>
 #define BCG_MAXIT 1000
@@ -154,6 +154,23 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS, SUNMatrix A) {
   }
   /* Attach linear solver memory to integrator memory */
   cv_mem->cv_lmem = cvdls_mem;
+
+#ifndef USE_BCG
+  cv_mem->nrows = SM_NP_S(cvdls_mem->A);
+  cv_mem->ddiag = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dr0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dr0h = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dn0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dp0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dt = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->ds = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dy = (double *)malloc(sizeof(double) * cv_mem->nrows);
+  cv_mem->dx = (double *)malloc(sizeof(double) * cv_mem->nrows);
+
+  cv_mem->nnz = SM_NNZ_S(cvdls_mem->A);
+  cv_mem->djA = (int *)malloc(sizeof(int) * cv_mem->nnz);
+  cv_mem->diA = (int *)malloc(sizeof(int) * (cv_mem->nrows + 1));
+#endif
 
   return (CVDLS_SUCCESS);
 }
@@ -589,21 +606,7 @@ int cvDlsInitialize(CVodeMem cv_mem) {
 
   /* Call LS initialize routine */
   cvdls_mem->last_flag = SUNLinSolInitialize(cvdls_mem->LS);
-#ifdef USE_BCG
-  cv_mem->nrows = SM_NP_S(cvdls_mem->A);
-  cv_mem->ddiag = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dr0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dr0h = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dn0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dp0 = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dt = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->ds = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dy = (double *)malloc(sizeof(double) * cv_mem->nrows);
-  cv_mem->dx = (double *)malloc(sizeof(double) * cv_mem->nrows);
-
-  cv_mem->nnz = SM_NNZ_S(cvdls_mem->A);
-  cv_mem->djA = (int *)malloc(sizeof(int) * cv_mem->nnz);
-  cv_mem->diA = (int *)malloc(sizeof(int) * (cv_mem->nrows + 1));
+#ifndef USE_BCG
   for (int i = 0; i < cv_mem->nnz; i++)
     cv_mem->djA[i] = SM_INDEXVALS_S(cvdls_mem->A)[i];
   for (int i = 0; i <= cv_mem->nrows; i++)
@@ -716,7 +719,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred, N_Vector fpred,
   // Call generic linear solver 'setup' with this system matrix, and
   //  return success/failure flag
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   cv_mem->dA = SM_DATA_S(cvdls_mem->A);
   double *dA = cv_mem->dA;
   int *diA = cv_mem->diA;
@@ -743,7 +746,7 @@ int cvDlsSetup(CVodeMem cv_mem, int convfail, N_Vector ypred, N_Vector fpred,
   return (cvdls_mem->last_flag);
 }
 
-#ifdef USE_BCG
+#ifndef USE_BCG
 void print_swapCSC_CSR_ODE(CVodeMem cv_mem) {
   CVodeMem md = cv_mem;
   int n_row = cv_mem->nrows;
@@ -836,8 +839,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   }
   cvdls_mem = (CVDlsMem)cv_mem->cv_lmem;
 
-#ifdef USE_BCG
+#ifndef USE_BCG
   CVodeMem md = cv_mem;
+  md->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
   // print_swapCSC_CSR_ODE(md);
   // print_double2(md->dA,md->nnz,"dA");
   // print_double2(md->dtempv,73,"dtempv");
