@@ -81,7 +81,7 @@ typedef struct CVodeMemRec {
   double *cv_ftempp;
 #endif
 
-#ifndef USE_BCG
+#ifdef USE_BCG
   double *ddiag;
   double *dr0;
   double *dr0h;
