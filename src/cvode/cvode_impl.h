@@ -61,7 +61,7 @@ extern "C" {
  */
 
 typedef struct CVodeMemRec {
-#ifdef CAMP_DEBUG_NVECTOR
+#ifndef CAMP_DEBUG_NVECTOR
   double *Ap;
   double *savedJp;
   double *cv_ewtp;
@@ -507,14 +507,14 @@ void cvErrHandler(int error_code, const char *module, const char *function,
 #define MSGCV_NO_MEM "cvode_mem = NULL illegal."
 #define MSGCV_CVMEM_FAIL "Allocation of cvode_mem failed."
 #define MSGCV_MEM_FAIL "A memory request failed."
-#define MSGCV_BAD_LMM \
+#define MSGCV_BAD_LMM                                                          \
   "Illegal value for lmm. The legal values are CV_ADAMS and CV_BDF."
-#define MSGCV_BAD_ITER \
+#define MSGCV_BAD_ITER                                                         \
   "Illegal value for iter. The legal values are CV_FUNCTIONAL and CV_NEWTON."
 #define MSGCV_NO_MALLOC "Attempt to call before CVodeInit."
 #define MSGCV_NEG_MAXORD "maxord <= 0 illegal."
 #define MSGCV_BAD_MAXORD "Illegal attempt to increase maximum method order."
-#define MSGCV_SET_SLDET \
+#define MSGCV_SET_SLDET                                                        \
   "Attempt to use stability limit detection with the CV_ADAMS method illegal."
 #define MSGCV_NEG_HMIN "hmin < 0 illegal."
 #define MSGCV_NEG_HMAX "hmax < 0 illegal."
@@ -541,54 +541,53 @@ void cvErrHandler(int error_code, const char *module, const char *function,
 #define MSGCV_EWT_NOW_BAD "At " MSG_TIME ", a component of ewt has become <= 0."
 #define MSGCV_BAD_ITASK "Illegal value for itask."
 #define MSGCV_BAD_H0 "h0 and tout - t0 inconsistent."
-#define MSGCV_BAD_TOUT                      \
-  "Trouble interpolating at " MSG_TIME_TOUT \
+#define MSGCV_BAD_TOUT                                                         \
+  "Trouble interpolating at " MSG_TIME_TOUT                                    \
   ". tout too far back in direction of integration"
 #define MSGCV_EWT_FAIL "The user-provide EwtSet function failed."
-#define MSGCV_EWT_NOW_FAIL \
+#define MSGCV_EWT_NOW_FAIL                                                     \
   "At " MSG_TIME ", the user-provide EwtSet function failed."
 #define MSGCV_LINIT_FAIL "The linear solver's init routine failed."
-#define MSGCV_HNIL_DONE                                                    \
-  "The above warning has been issued mxhnil times and will not be issued " \
+#define MSGCV_HNIL_DONE                                                        \
+  "The above warning has been issued mxhnil times and will not be issued "     \
   "again for this problem."
 #define MSGCV_TOO_CLOSE "tout too close to t0 to start integration."
-#define MSGCV_MAX_STEPS \
+#define MSGCV_MAX_STEPS                                                        \
   "At " MSG_TIME ", mxstep steps taken before reaching tout."
 #define MSGCV_TOO_MUCH_ACC "At " MSG_TIME ", too much accuracy requested."
-#define MSGCV_HNIL                                                       \
-  "Internal " MSG_TIME_H                                                 \
-  " are such that t + h = t on the next step. The solver will continue " \
+#define MSGCV_HNIL                                                             \
+  "Internal " MSG_TIME_H                                                       \
+  " are such that t + h = t on the next step. The solver will continue "       \
   "anyway."
-#define MSGCV_ERR_FAILS \
+#define MSGCV_ERR_FAILS                                                        \
   "At " MSG_TIME_H ", the error test failed repeatedly or with |h| = hmin."
-#define MSGCV_CONV_FAILS \
-  "At " MSG_TIME_H       \
+#define MSGCV_CONV_FAILS                                                       \
+  "At " MSG_TIME_H                                                             \
   ", the corrector convergence test failed repeatedly or with |h| = hmin."
-#define MSGCV_SETUP_FAILED \
+#define MSGCV_SETUP_FAILED                                                     \
   "At " MSG_TIME ", the setup routine failed in an unrecoverable manner."
-#define MSGCV_SOLVE_FAILED \
+#define MSGCV_SOLVE_FAILED                                                     \
   "At " MSG_TIME ", the solve routine failed in an unrecoverable manner."
-#define MSGCV_RHSFUNC_FAILED \
-  "At " MSG_TIME             \
+#define MSGCV_RHSFUNC_FAILED                                                   \
+  "At " MSG_TIME                                                               \
   ", the right-hand side routine failed in an unrecoverable manner."
-#define MSGCV_RHSFUNC_UNREC                                                   \
-  "At " MSG_TIME                                                              \
-  ", the right-hand side failed in a recoverable manner, but no recovery is " \
+#define MSGCV_RHSFUNC_UNREC                                                    \
+  "At " MSG_TIME                                                               \
+  ", the right-hand side failed in a recoverable manner, but no recovery is "  \
   "possible."
-#define MSGCV_RHSFUNC_REPTD \
+#define MSGCV_RHSFUNC_REPTD                                                    \
   "At " MSG_TIME " repeated recoverable right-hand side function errors."
-#define MSGCV_RHSFUNC_FIRST \
+#define MSGCV_RHSFUNC_FIRST                                                    \
   "The right-hand side routine failed at the first call."
-#define MSGCV_RTFUNC_FAILED                               \
-  "At " MSG_TIME                                          \
-  ", the rootfinding routine failed in an unrecoverable " \
+#define MSGCV_RTFUNC_FAILED                                                    \
+  "At " MSG_TIME ", the rootfinding routine failed in an unrecoverable "       \
   "manner."
 #define MSGCV_CLOSE_ROOTS "Root found at and very near " MSG_TIME "."
-#define MSGCV_BAD_TSTOP                                      \
-  "The value " MSG_TIME_TSTOP " is behind current " MSG_TIME \
+#define MSGCV_BAD_TSTOP                                                        \
+  "The value " MSG_TIME_TSTOP " is behind current " MSG_TIME                   \
   " in the direction of integration."
-#define MSGCV_INACTIVE_ROOTS                                           \
-  "At the end of the first step, there are still some root functions " \
+#define MSGCV_INACTIVE_ROOTS                                                   \
+  "At the end of the first step, there are still some root functions "         \
   "identically 0. This warning will not be issued again."
 
 #ifdef __cplusplus

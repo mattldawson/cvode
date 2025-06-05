@@ -48,6 +48,7 @@
 #define ONE RCONST(1.0)
 #define TWO RCONST(2.0)
 
+// #include "utils.h"
 #include <time.h>
 
 #ifndef USE_BCG
@@ -102,7 +103,8 @@ int CVDlsSetLinearSolver(void *cvode_mem, SUNLinearSolver LS, SUNMatrix A) {
   }
 
   /* free any existing system solver attached to CVode */
-  if (cv_mem->cv_lfree) cv_mem->cv_lfree(cv_mem);
+  if (cv_mem->cv_lfree)
+    cv_mem->cv_lfree(cv_mem);
 
   /* Set four main system linear solver function fields in cv_mem */
   cv_mem->cv_linit = cvDlsInitialize;
@@ -320,32 +322,32 @@ char *CVDlsGetReturnFlagName(long int flag) {
   name = (char *)malloc(30 * sizeof(char));
 
   switch (flag) {
-    case CVDLS_SUCCESS:
-      sprintf(name, "CVDLS_SUCCESS");
-      break;
-    case CVDLS_MEM_NULL:
-      sprintf(name, "CVDLS_MEM_NULL");
-      break;
-    case CVDLS_LMEM_NULL:
-      sprintf(name, "CVDLS_LMEM_NULL");
-      break;
-    case CVDLS_ILL_INPUT:
-      sprintf(name, "CVDLS_ILL_INPUT");
-      break;
-    case CVDLS_MEM_FAIL:
-      sprintf(name, "CVDLS_MEM_FAIL");
-      break;
-    case CVDLS_JACFUNC_UNRECVR:
-      sprintf(name, "CVDLS_JACFUNC_UNRECVR");
-      break;
-    case CVDLS_JACFUNC_RECVR:
-      sprintf(name, "CVDLS_JACFUNC_RECVR");
-      break;
-    case CVDLS_SUNMAT_FAIL:
-      sprintf(name, "CVDLS_SUNMAT_FAIL");
-      break;
-    default:
-      sprintf(name, "NONE");
+  case CVDLS_SUCCESS:
+    sprintf(name, "CVDLS_SUCCESS");
+    break;
+  case CVDLS_MEM_NULL:
+    sprintf(name, "CVDLS_MEM_NULL");
+    break;
+  case CVDLS_LMEM_NULL:
+    sprintf(name, "CVDLS_LMEM_NULL");
+    break;
+  case CVDLS_ILL_INPUT:
+    sprintf(name, "CVDLS_ILL_INPUT");
+    break;
+  case CVDLS_MEM_FAIL:
+    sprintf(name, "CVDLS_MEM_FAIL");
+    break;
+  case CVDLS_JACFUNC_UNRECVR:
+    sprintf(name, "CVDLS_JACFUNC_UNRECVR");
+    break;
+  case CVDLS_JACFUNC_RECVR:
+    sprintf(name, "CVDLS_JACFUNC_RECVR");
+    break;
+  case CVDLS_SUNMAT_FAIL:
+    sprintf(name, "CVDLS_SUNMAT_FAIL");
+    break;
+  default:
+    sprintf(name, "NONE");
   }
 
   return (name);
@@ -470,7 +472,8 @@ int cvDlsDenseDQJac(realtype t, N_Vector y, N_Vector fy, SUNMatrix Jac,
 
     retval = cv_mem->cv_f(t, y, ftemp, cv_mem->cv_user_data);
     cvdls_mem->nfeDQ++;
-    if (retval != 0) break;
+    if (retval != 0)
+      break;
 
     y_data[j] = yjsaved;
 
@@ -552,7 +555,8 @@ int cvDlsBandDQJac(realtype t, N_Vector y, N_Vector fy, SUNMatrix Jac,
     /* Evaluate f with incremented y */
     retval = cv_mem->cv_f(cv_mem->cv_tn, ytemp, ftemp, cv_mem->cv_user_data);
     cvdls_mem->nfeDQ++;
-    if (retval != 0) break;
+    if (retval != 0)
+      break;
 
     /* Restore ytemp, then form and load difference quotients */
     for (j = group - 1; j < N; j += width) {
@@ -612,7 +616,7 @@ int cvDlsInitialize(CVodeMem cv_mem) {
   for (int i = 0; i <= cv_mem->nrows; i++)
     cv_mem->diA[i] = SM_INDEXPTRS_S(cvdls_mem->A)[i];
 #endif
-#ifdef CAMP_DEBUG_NVECTOR
+#ifndef CAMP_DEBUG_NVECTOR
   cv_mem->Ap = ((SUNMatrixContent_Sparse)(cvdls_mem->A->content))->data;
   cv_mem->savedJp =
       ((SUNMatrixContent_Sparse)(cvdls_mem->savedJ->content))->data;
@@ -843,23 +847,28 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   CVodeMem md = cv_mem;
   md->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
   // print_swapCSC_CSR_ODE(md);
-  // print_double2(md->dA,md->nnz,"dA");
-  // print_double2(md->dtempv,73,"dtempv");
-  // print_double2(md->dx,73,"dx1017");
+  // print_double2(md->dA, md->nnz, "dA849");
+  // print_double2(md->dtempv, 2, "dtempv");
+  // print_double2(md->dx, 2, "dx1017");
   double alpha, rho0, omega0, beta, rho1, temp1, temp2;
   alpha = rho0 = omega0 = beta = rho1 = temp1 = temp2 = 1.0;
   for (int i = 0; i < cv_mem->nrows; i++) {
     md->dn0[i] = 0.0;
     md->dp0[i] = 0.0;
   }
+  // write_MTX(cv_mem->nrows, cv_mem->nrows, md->nnz, md->diA, md->djA, md->dA);
+
   cudaDeviceSpmv_2(cv_mem, md->dr0, md->dx, md->dA, md->djA, md->diA);
   for (int i = 0; i < cv_mem->nrows; i++) {
     md->dr0[i] = md->dtempv[i] - md->dr0[i];
     md->dr0h[i] = md->dr0[i];
   }
   int it = 0;
-  while (it < BCG_MAXIT && temp1 > 1.0E-30) {
+  const double tol = 1e-30;
+  while (it < BCG_MAXIT && temp1 > tol) {
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0h, &rho1);
+    if (fabs(rho0) < tol || fabs(omega0) < tol)
+      break;
     beta = (rho1 / rho0) * (alpha / omega0);
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->dp0[i] = beta * md->dp0[i] + md->dr0[i] - md->dn0[i] * omega0 * beta;
@@ -867,6 +876,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
     }
     cudaDeviceSpmv_2(cv_mem, md->dn0, md->dy, md->dA, md->djA, md->diA);
     cudaDevicedotxy_2(cv_mem, md->dr0h, md->dn0, &temp1);
+    if (fabs(temp1) < tol)
+      break;
     alpha = rho1 / temp1;
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->ds[i] = md->dr0[i] - alpha * md->dn0[i];
@@ -878,8 +889,20 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
     cudaDevicedotxy_2(cv_mem, md->dy, md->dr0, &temp1);
+
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0, &temp2);
+    // FIRST: Isolate in simpler code
+    // Experiment to avoid division by 0 (look at another CG codes)
+    // Ask chatGPT that I have CG and a corner case of division 0 by zero and
+    // how can we avoided
+    // TODO: Add to the unit tests the Handle of floating points exception
+    // (flags to check e.g. division by zero, and -O0)
+
+    if (fabs(temp2) < tol)
+      break;
     omega0 = temp1 / temp2;
+    if (temp2 == 0)
+      omega0 = 0; // Try 1: If corner case : omega0=0;
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->dx[i] += omega0 * md->dy[i];
       md->dr0[i] = md->ds[i] - omega0 * md->dt[i];
@@ -890,8 +913,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
     rho0 = rho1;
     it++;
   }
+  // printf("it %d\n", it);
   if (it >= BCG_MAXIT) {
-    printf("it>=BCG_MAXIT\n %d>%d", it, BCG_MAXIT);
+    printf("it>=BCG_MAXIT %d>%d\n", it, BCG_MAXIT);
     exit(0);
   }
   retval = 0;
@@ -899,13 +923,14 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   for (int i = 0; i < cv_mem->nrows; i++) {
     xp[i] = md->dx[i];
   }
+
 #else
   // call the generic linear system solver, and copy b to x
   retval = SUNLinSolSolve(cvdls_mem->LS, cvdls_mem->A, cvdls_mem->x, b, ZERO);
 #endif
 
-  //  double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
-  // print_double2(xp,73,"dx");
+  // double *xp = cvdls_mem->x->ops->nvgetarraypointer(cvdls_mem->x);
+  // print_double2(md->dx, 2, "dx917");
 
   // copy x into b
   N_VScale(ONE, cvdls_mem->x, b);
@@ -928,8 +953,10 @@ int cvDlsFree(CVodeMem cv_mem) {
   CVDlsMem cvdls_mem;
 
   /* Return immediately if cv_mem or cv_mem->cv_lmem are NULL */
-  if (cv_mem == NULL) return (CVDLS_SUCCESS);
-  if (cv_mem->cv_lmem == NULL) return (CVDLS_SUCCESS);
+  if (cv_mem == NULL)
+    return (CVDLS_SUCCESS);
+  if (cv_mem->cv_lmem == NULL)
+    return (CVDLS_SUCCESS);
   cvdls_mem = (CVDlsMem)cv_mem->cv_lmem;
 
   /* Free x vector */
