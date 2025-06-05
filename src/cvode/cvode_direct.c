@@ -893,8 +893,6 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
     if (fabs(temp2) < tol)
       break;
     omega0 = temp1 / temp2;
-    if (temp2 == 0)
-      omega0 = 0; // Try 1: If corner case : omega0=0;
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->dx[i] += omega0 * md->dy[i];
       md->dr0[i] = md->ds[i] - omega0 * md->dt[i];
