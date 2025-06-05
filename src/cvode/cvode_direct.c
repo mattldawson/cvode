@@ -889,15 +889,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
     cudaDevicedotxy_2(cv_mem, md->dy, md->dr0, &temp1);
-
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0, &temp2);
-    // FIRST: Isolate in simpler code
-    // Experiment to avoid division by 0 (look at another CG codes)
-    // Ask chatGPT that I have CG and a corner case of division 0 by zero and
-    // how can we avoided
-    // TODO: Add to the unit tests the Handle of floating points exception
-    // (flags to check e.g. division by zero, and -O0)
-
     if (fabs(temp2) < tol)
       break;
     omega0 = temp1 / temp2;
