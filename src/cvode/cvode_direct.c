@@ -794,8 +794,8 @@ void print_swapCSC_CSR_ODE(CVodeMem cv_mem) {
   free(Bx);
 }
 
-void cudaDeviceSpmv_2(CVodeMem cv_mem, double *dx, double *db, double *dA,
-                      int *djA, int *diA) {
+void cudaDeviceSpmv_CSR(CVodeMem cv_mem, double *dx, double *db, double *dA,
+                        int *djA, int *diA) {
   for (int row = 0; row < cv_mem->nrows; row++) {
     dx[row] = 0.0;
   }
@@ -847,9 +847,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   CVodeMem md = cv_mem;
   md->dtempv = N_VGetArrayPointer(cv_mem->cv_tempv);
   // print_swapCSC_CSR_ODE(md);
-  // print_double2(md->dA, md->nnz, "dA849");
-  // print_double2(md->dtempv, 2, "dtempv");
-  // print_double2(md->dx, 2, "dx1017");
+  // print_double2(md->dx, 3, "dx_lsolve1");
+  // print_double(md->ddiag, 3, "ddiag_lsolve1");
+  // print_double2(md->dA, md->nnz, "dA_lsolve1");
   double alpha, rho0, omega0, beta, rho1, temp1, temp2;
   alpha = rho0 = omega0 = beta = rho1 = temp1 = temp2 = 1.0;
   for (int i = 0; i < cv_mem->nrows; i++) {
@@ -858,7 +858,8 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   }
   // write_MTX(cv_mem->nrows, cv_mem->nrows, md->nnz, md->diA, md->djA, md->dA);
 
-  cudaDeviceSpmv_2(cv_mem, md->dr0, md->dx, md->dA, md->djA, md->diA);
+  cudaDeviceSpmv_CSR(cv_mem, md->dr0, md->dx, md->dA, md->djA, md->diA);
+  // print_double(md->dr0, 3, "dr0cv_lsolve1");
   for (int i = 0; i < cv_mem->nrows; i++) {
     md->dr0[i] = md->dtempv[i] - md->dr0[i];
     md->dr0h[i] = md->dr0[i];
@@ -867,6 +868,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
   const double tol = 1e-30;
   while (it < BCG_MAXIT && temp1 > tol) {
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0h, &rho1);
+    // print_double(&rho1, 1, "rho1");
     if (fabs(rho0) < tol || fabs(omega0) < tol)
       break;
     beta = (rho1 / rho0) * (alpha / omega0);
@@ -874,8 +876,9 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
       md->dp0[i] = beta * md->dp0[i] + md->dr0[i] - md->dn0[i] * omega0 * beta;
       md->dy[i] = md->ddiag[i] * md->dp0[i];
     }
-    cudaDeviceSpmv_2(cv_mem, md->dn0, md->dy, md->dA, md->djA, md->diA);
+    cudaDeviceSpmv_CSR(cv_mem, md->dn0, md->dy, md->dA, md->djA, md->diA);
     cudaDevicedotxy_2(cv_mem, md->dr0h, md->dn0, &temp1);
+    // print_double(&temp1, 1, "temp1");
     if (fabs(temp1) < tol)
       break;
     alpha = rho1 / temp1;
@@ -884,12 +887,13 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
       md->dx[i] += alpha * md->dy[i];
       md->dy[i] = md->ddiag[i] * md->ds[i];
     }
-    cudaDeviceSpmv_2(cv_mem, md->dt, md->dy, md->dA, md->djA, md->diA);
+    cudaDeviceSpmv_CSR(cv_mem, md->dt, md->dy, md->dA, md->djA, md->diA);
     for (int i = 0; i < cv_mem->nrows; i++) {
       md->dr0[i] = md->ddiag[i] * md->dt[i];
     }
     cudaDevicedotxy_2(cv_mem, md->dy, md->dr0, &temp1);
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0, &temp2);
+    // print_double(&temp2, 1, "temp2");
     if (fabs(temp2) < tol)
       break;
     omega0 = temp1 / temp2;
@@ -899,6 +903,7 @@ int cvDlsSolve(CVodeMem cv_mem, N_Vector b, N_Vector weight, N_Vector ycur,
       md->dt[i] = 0.0;
     }
     cudaDevicedotxy_2(cv_mem, md->dr0, md->dr0, &temp1);
+    // print_double(&temp1, 1, "temp1BCGEnd");
     temp1 = sqrt(temp1);
     rho0 = rho1;
     it++;

@@ -381,11 +381,11 @@ static int cvRootfind(CVodeMem cv_mem);
  * =================================================================
  */
 
-void print_double_cv(double *x, int len, const char *s) {
+void // print_double_cv(double *x, int len, const char *s) {
 #ifndef USE_PRINT_ARRAYS
-  for (int i = 0; i < len; i++) {
-    printf("%s[%d]=%.17le\n", s, i, x[i]);
-  }
+    for (int i = 0; i < len; i++) {
+  printf("%s[%d]=%.17le\n", s, i, x[i]);
+}
 #endif
 }
 
@@ -1401,6 +1401,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout, realtype *tret,
    */
 
   nstloc = 0;
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1cvStepStart");
   for (;;) {
     SUNDIALS_DEBUG_PRINT_INT("Beginning timestep", nstloc);
 
@@ -1466,7 +1467,7 @@ int CVode(void *cvode_mem, realtype tout, N_Vector yout, realtype *tret,
 
     double startcvStep = MPI_Wtime();
     /* Call cvStep to take a step */
-    // print_double_cv(cv_mem->cv_zn0p, 86, "dzn1858");
+    // print_double_cv(cv_mem->cv_zn0p, 3, "dzn1858");
     kflag = cvStep(cv_mem);
     cv_mem->timecvStep += MPI_Wtime() - startcvStep;
 
@@ -1728,6 +1729,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl) {
     N_VDestroy(cv_mem->cv_ewt);
     return (SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_acor);
 
   cv_mem->cv_tempv = N_VClone(tmpl);
   if (cv_mem->cv_tempv == NULL) {
@@ -1765,6 +1767,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl) {
     N_VDestroy(cv_mem->cv_acor);
     return (SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_acor_init);
 
   cv_mem->cv_last_yn = N_VClone(tmpl);
   if (cv_mem->cv_last_yn == NULL) {
@@ -1776,6 +1779,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl) {
     N_VDestroy(cv_mem->cv_acor);
     return (SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_last_yn);
 
   cv_mem->cv_ftemp = N_VClone(tmpl);
   if (cv_mem->cv_ftemp == NULL) {
@@ -1788,6 +1792,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl) {
     N_VDestroy(cv_mem->cv_acor);
     return (SUNFALSE);
   }
+  N_VConst(ZERO, cv_mem->cv_ftemp);
 
   /* Allocate zn[0] ... zn[qmax] */
 
@@ -1806,6 +1811,7 @@ static booleantype cvAllocVectors(CVodeMem cv_mem, N_Vector tmpl) {
         N_VDestroy(cv_mem->cv_zn[i]);
       return (SUNFALSE);
     }
+    N_VConst(ZERO, cv_mem->cv_zn[j]);
   }
 
   /* Update solver workspace lengths  */
@@ -2237,6 +2243,7 @@ static int cvStep(CVodeMem cv_mem) {
  */
 
 static void cvAdjustParams(CVodeMem cv_mem) {
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1AdjustParamsStart");
   if (cv_mem->cv_qprime != cv_mem->cv_q) {
     cvAdjustOrder(cv_mem, cv_mem->cv_qprime - cv_mem->cv_q);
     cv_mem->cv_q = cv_mem->cv_qprime;
@@ -2245,6 +2252,7 @@ static void cvAdjustParams(CVodeMem cv_mem) {
     cv_mem->cv_qwait = cv_mem->cv_L;
   }
   cvRescale(cv_mem);
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1AdjustParamsEnd");
 }
 
 /*
@@ -2453,8 +2461,8 @@ static void cvPredict(CVodeMem cv_mem) {
       cv_mem->cv_tn = cv_mem->cv_tstop;
   }
   N_VScale(ONE, cv_mem->cv_zn[0], cv_mem->cv_last_yn);
-  // print_double_cv(cv_mem->cv_zn0p, 86, "dzn1432");
-  // print_double_cv(cv_mem->cv_zn1p, 86, "dzn1433");
+  // print_double_cv(cv_mem->cv_zn0p, 3, "dzn0PredictStart");
+  //  print_double_cv(cv_mem->cv_zn1p, 3, "dzn1PredictStart");
 
   // printf("cv_q %d\n",cv_mem->cv_q);
   for (k = 1; k <= cv_mem->cv_q; k++)
@@ -2462,7 +2470,7 @@ static void cvPredict(CVodeMem cv_mem) {
       N_VLinearSum(ONE, cv_mem->cv_zn[j - 1], ONE, cv_mem->cv_zn[j],
                    cv_mem->cv_zn[j - 1]);
 
-  // print_double_cv(cv_mem->cv_zn0p, 86, "dzn1439");
+  // print_double_cv(cv_mem->cv_zn0p, 3, "dzn0PredictEnd");
 }
 
 /*
@@ -2885,7 +2893,7 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag) {
     // print_double_cv(cv_mem->cv_last_ynp,86,"cv_last_yn1175");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], -ONE, cv_mem->cv_last_yn,
                  cv_mem->cv_ftemp);
-    // print_double_cv(cv_mem->cv_ftempp,86,"cv_ftemppN_VLinearSum2");
+    // print_double_cv(cv_mem->cv_ftempp, 3, "cv_ftemppN_VLinearSum2");
     retval = cv_mem->cv_ghfun(cv_mem->cv_tn, cv_mem->cv_h, cv_mem->cv_zn[0],
                               cv_mem->cv_last_yn, cv_mem->cv_ftemp,
                               cv_mem->cv_user_data, cv_mem->cv_tempv1,
@@ -2905,15 +2913,14 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag) {
     // print_double_cv(cv_mem->cv_acor_initp,86,"cv_acor_init1140");
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor_init,
                  cv_mem->cv_y);
-    // print_double_cv(cv_mem->cv_yp,86,"dcv_y1139");
+    // print_double_cv(cv_mem->cv_yp, 3, "dcv_y1139");
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
     // print_double_cv(cv_mem->cv_ftempp,86,"cv_ftemppcv_f1");
     // print_double_cv(&cv_mem->cv_tn,1,"cv_tn1216");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y, cv_mem->cv_ftemp,
                           cv_mem->cv_user_data);
-    // print_double_cv(cv_mem->cv_ftempp,86,"cv_ftemppcv_f2");
-    // print_double_cv(cv_mem->cv_yp,86,"dcv_y1144");
+    // print_double_cv(cv_mem->cv_ftempp, 3, "cv_ftemppcv_f2");
 
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval + 100);
     cv_mem->cv_nfe++;
@@ -2942,6 +2949,8 @@ static int cvNlsNewton(CVodeMem cv_mem, int nflag) {
     }
 
     /* Set acor to the initial guess for adjustments to the y vector */
+    // print_double_cv(cv_mem->cv_acorp, 3, "cv_acorNewtonStart");
+    // print_double_cv(cv_mem->cv_acor_initp, 3, "cv_acor_initNewtonStart");
     N_VScale(ONE, cv_mem->cv_acor_init, cv_mem->cv_acor);
 
     /* Do the Newton iteration */
@@ -2987,14 +2996,19 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
 
   /* Looping point for Newton iteration */
   for (;;) {
-    // print_double_cv(cv_mem->cv_tempvp,86,"dtempvN_VLinearSum1");
+    // print_double_cv(&cv_mem->cv_rl1, 1, "cv_rl1N_VLinearSum1");
+    // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1N_VLinearSum1");
+    //  print_double_cv(cv_mem->cv_acorp, 3, "cv_acorN_VLinearSum1");
+    //  print_double_cv(cv_mem->cv_tempvp, 3, "dtempvN_VLinearSum1");
     /* Evaluate the residual of the nonlinear system */
     N_VLinearSum(cv_mem->cv_rl1, cv_mem->cv_zn[1], ONE, cv_mem->cv_acor,
                  cv_mem->cv_tempv);
-    // print_double_cv(cv_mem->cv_tempvp,86,"dtempvN_VLinearSum2");
+    // print_double_cv(cv_mem->cv_tempvp, 3, "dtempvN_VLinearSum2");
+    //  //print_double_cv(&cv_mem->cv_gamma, 1, "cv_gammaN_VLinearSum1");
+    // print_double_cv(cv_mem->cv_ftempp, 3, "ftempN_VLinearSum2");
     N_VLinearSum(cv_mem->cv_gamma, cv_mem->cv_ftemp, -ONE, cv_mem->cv_tempv,
                  cv_mem->cv_tempv);
-    // print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve1");
+    // print_double_cv(cv_mem->cv_tempvp, 3, "dtempvcv_lsolve1");
 
     /* Call the lsolve function */
     b = cv_mem->cv_tempv;
@@ -3003,8 +3017,8 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
                                cv_mem->cv_ftemp);
     SUNDIALS_DEBUG_PRINT_INT("After linear solver", retval + 100);
     cv_mem->cv_nni++;
-    // print_double_cv(cv_mem->cv_tempvp, 86, "dtempvcv_lsolve2");
-    //  print_double_cv(cv_mem->cv_yp,86,"dcv_y2994");
+    // print_double_cv(cv_mem->cv_tempvp, 3, "dtempvcv_lsolve2");
+    //   //print_double_cv(cv_mem->cv_yp,86,"dcv_y2994");
 
     if (retval < 0)
       return (CV_LSOLVE_FAIL);
@@ -3055,8 +3069,8 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
     N_VLinearSum(ONE, cv_mem->cv_acor, ONE, b, cv_mem->cv_acor);
     N_VLinearSum(ONE, cv_mem->cv_zn[0], ONE, cv_mem->cv_acor, cv_mem->cv_y);
     SUNDIALS_DEBUG_PRINT_FULL("Updated correction and predicted y");
-    // print_double_cv(cv_mem->cv_acorp,86,"cv_acor1060");
-    // print_double_cv(cv_mem->cv_yp,86,"dcv_y1060");
+    // print_double_cv(cv_mem->cv_acorp, 3, "cv_acor1060");
+    //  //print_double_cv(cv_mem->cv_yp,86,"dcv_y1060");
 
     /* Test for convergence.  If m > 0, an estimate of the convergence
        rate constant is stored in crate, and used in the test.        */
@@ -3094,12 +3108,15 @@ static int cvNewtonIteration(CVodeMem cv_mem) {
     delp = del;
     SUNDIALS_DEBUG_PRINT("Request derivative");
 
-    // print_double_cv(cv_mem->cv_yp,86,"dcv_y1137");
+    // print_double_cv(cv_mem->cv_yp, 3, "dcv_y1137");
+    // print_double_cv(&cv_mem->cv_tn, 1, "cv_next_h1137");
     retval = cv_mem->cv_f(cv_mem->cv_tn, cv_mem->cv_y, cv_mem->cv_ftemp,
                           cv_mem->cv_user_data);
-
+    // print_double_cv(cv_mem->cv_yp, 3, "dcv_y1138");
+    // print_double_cv(cv_mem->cv_zn0p, 3, "dzn01138");
     N_VLinearSum(ONE, cv_mem->cv_y, -ONE, cv_mem->cv_zn[0], cv_mem->cv_acor);
     SUNDIALS_DEBUG_PRINT_INT("Received derivative", retval + 100);
+    // print_double_cv(cv_mem->cv_acorp, 3, "cv_acorNewtonIterEnd");
     cv_mem->cv_nfe++;
     if (retval < 0)
       return (CV_RHSFUNC_FAIL);
@@ -3156,7 +3173,9 @@ static int cvHandleNFlag(CVodeMem cv_mem, int *nflagPtr, realtype saved_t,
 
   /* The nonlinear soln. failed; increment ncfn and restore zn */
   cv_mem->cv_ncfn++;
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1RestoreStart");
   cvRestore(cv_mem, saved_t);
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1RestoreEnd");
 
   /* Return if lsetup, lsolve, or rhs failed unrecoverably */
   if (nflag == CV_LSETUP_FAIL)
@@ -3187,7 +3206,9 @@ static int cvHandleNFlag(CVodeMem cv_mem, int *nflagPtr, realtype saved_t,
   cv_mem->cv_eta = SUNMAX(ETACF, cv_mem->cv_hmin / SUNRabs(cv_mem->cv_h));
   // print_double_cv(&cv_mem->cv_eta,1,"cv_eta_1337");
   *nflagPtr = PREV_CONV_FAIL;
+
   cvRescale(cv_mem);
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1End");
 
   return (PREDICT_AGAIN);
 }
@@ -3330,7 +3351,9 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
   if (retval > 0)
     return (CV_UNREC_RHSFUNC_ERR);
 
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1DoErrorTestStart");
   N_VScale(cv_mem->cv_h, cv_mem->cv_tempv, cv_mem->cv_zn[1]);
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1DoErrorTestEnd");
 
   return (TRY_AGAIN);
 }
@@ -3356,6 +3379,7 @@ static booleantype cvDoErrorTest(CVodeMem cv_mem, int *nflagPtr,
 static void cvCompleteStep(CVodeMem cv_mem) {
   int i, j;
 
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1cvCompleteStepStart");
   cv_mem->cv_nst++;
   cv_mem->cv_nscon++;
   cv_mem->cv_hu = cv_mem->cv_h;
@@ -3378,6 +3402,7 @@ static void cvCompleteStep(CVodeMem cv_mem) {
     cv_mem->cv_saved_tq5 = cv_mem->cv_tq[5];
     cv_mem->cv_indx_acor = cv_mem->cv_qmax;
   }
+  // print_double_cv(cv_mem->cv_zn1p, 3, "dzn1cvCompleteStepEnd");
 }
 
 /*
@@ -3402,18 +3427,18 @@ static void cvPrepareNextStep(CVodeMem cv_mem, realtype dsm) {
 
   /* etaq is the ratio of new to old h at the current order */
   // print_double_cv(&dsm,1,"dsm1639");
-  // print_int_cv(&cv_mem->cv_L,1,"cv_L1639");
-  // double BIAS2dsm=BIAS2*dsm;
+  //  print_int_cv(&cv_mem->cv_L,1,"cv_L1639");
+  //  double BIAS2dsm=BIAS2*dsm;
   // print_double_cv(&BIAS2dsm,1,"BIAS2dsm");
-  // double cv_L1=1./cv_mem->cv_L;
+  //  double cv_L1=1./cv_mem->cv_L;
   // print_double_cv(&cv_L1,1,"1cv_L");
-  // double cv_etaq_power=SUNRpowerR(BIAS2dsm,cv_L1);
+  //  double cv_etaq_power=SUNRpowerR(BIAS2dsm,cv_L1);
   // print_double_cv(&cv_etaq_power,1,"cv_etaq_power");
-  // double cv_etaq_sqrt=sqrt(BIAS2dsm);
+  //  double cv_etaq_sqrt=sqrt(BIAS2dsm);
   // print_double_cv(&cv_etaq_sqrt,1,"cv_etaq_sqrt");
   cv_mem->cv_etaq = ONE / (SUNRpowerR(BIAS2 * dsm, ONE / cv_mem->cv_L) + ADDON);
   // print_double_cv(&cv_mem->cv_etaq,1,"cv_etaq1639");
-  // print_int_cv(&cv_mem->cv_L,1,"cv_L1674");
+  //  print_int_cv(&cv_mem->cv_L,1,"cv_L1674");
   /* If no order change, adjust eta and acor in cvSetEta and return */
   if (cv_mem->cv_qwait != 0) {
     cv_mem->cv_eta = cv_mem->cv_etaq;
@@ -3498,12 +3523,12 @@ static realtype cvComputeEtaqp1(CVodeMem cv_mem) {
     // print_double_cv(cv_mem->cv_tempvp,86,"dtempv1658");
     dup = N_VWrmsNorm(cv_mem->cv_tempv, cv_mem->cv_ewt) * cv_mem->cv_tq[3];
     // print_double_cv(&dup,1,"dup1728");
-    // print_int_cv(&cv_mem->cv_L, 1, "cv_L1728");
-    // double BIAS3dup=BIAS3*dup;
+    //  print_int_cv(&cv_mem->cv_L, 1, "cv_L1728");
+    //  double BIAS3dup=BIAS3*dup;
     // print_double_cv(&BIAS3dup,1,"BIAS3dup");
-    // double cv_L1=1./(cv_mem->cv_L+1);
+    //  double cv_L1=1./(cv_mem->cv_L+1);
     // print_double_cv(&cv_L1,1,"1cv_L1732");
-    // double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
+    //  double cv_etaq_power=SUNRpowerR(BIAS3dup,cv_L1);
     // print_double_cv(&cv_etaq_power,1,"cv_etaq_power1734");
     cv_mem->cv_etaqp1 =
         ONE / (SUNRpowerR(BIAS3 * dup, ONE / (cv_mem->cv_L + 1)) + ADDON);
